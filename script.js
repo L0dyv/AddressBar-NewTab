@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             // 如果不是域名格式，假设是搜索内容，重定向到百度搜索
             else {
-                url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url);
+                url = 'https://cn.bing.com/search?q=' + encodeURIComponent(url);
             }
         }
 
