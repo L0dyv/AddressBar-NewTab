@@ -11,7 +11,28 @@
 <body>
     <div class="container">
         <div class="url-bar-container">
-            <input type="text" id="urlBar" placeholder="输入网址..." autofocus>
+            <div class="search-engine-dropdown">
+                <button id="searchEngineBtn" class="search-engine-btn">
+                    <img id="searchEngineIcon" src="icons/search.svg" alt="搜索引擎图标">
+                </button>
+                <div class="search-engine-menu" id="searchEngineMenu">
+                    <div class="search-engine-list" id="searchEngineList">
+                        <!-- 搜索引擎列表将通过JavaScript动态添加 -->
+                    </div>
+                    <div class="custom-search-engine">
+                        <input type="text" id="customEngineName" placeholder="搜索引擎名称">
+                        <input type="text" id="customEngineUrl" placeholder="搜索URL (使用%s作为搜索词占位符)">
+                        <button id="addCustomEngine">添加</button>
+                    </div>
+                </div>
+            </div>
+            <div class="url-input-wrapper">
+                <div id="searchPrefix" class="search-prefix">
+                    <span id="searchEngineName"></span>
+                    <span class="separator">|</span>
+                </div>
+                <input type="text" id="urlBar" placeholder="输入网址..." autofocus>
+            </div>
             <button id="goButton">转到</button>
         </div>
     </div>
