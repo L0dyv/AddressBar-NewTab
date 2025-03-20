@@ -34,6 +34,7 @@ const customEngineUrl = document.getElementById('customEngineUrl');
 const addCustomEngine = document.getElementById('addCustomEngine');
 const searchPrefix = document.getElementById('searchPrefix');
 const searchEngineName = document.getElementById('searchEngineName');
+const historyAutocomplete = document.getElementById('historyAutocomplete');
 
 // 从localStorage加载自定义搜索引擎和默认搜索引擎
 let customSearchEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '[]');
@@ -227,4 +228,117 @@ urlBar.addEventListener('keypress', (e) => {
 });
 
 // 初始化
-initializeSearchEngines(); 
+initializeSearchEngines();
+
+// 历史记录自动补全功能
+let autocompleteTimeout;
+let selectedIndex = -1;
+
+// 监听输入框输入事件，显示历史记录自动补全
+urlBar.addEventListener('input', function () {
+    clearTimeout(autocompleteTimeout);
+
+    const query = urlBar.value.trim();
+    if (query.length < 2) {
+        historyAutocomplete.classList.remove('active');
+        historyAutocomplete.innerHTML = '';
+        return;
+    }
+
+    // 延迟查询，避免频繁触发
+    autocompleteTimeout = setTimeout(() => {
+        chrome.history.search({
+            text: query,            // 搜索文本
+            maxResults: 10,         // 最多返回10条结果
+            startTime: 0            // 从最开始的历史记录中搜索
+        }, function (results) {
+            if (results.length === 0) {
+                historyAutocomplete.classList.remove('active');
+                return;
+            }
+
+            // 清空并填充历史记录列表
+            historyAutocomplete.innerHTML = '';
+            results.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+
+                // 提取域名作为网站图标
+                const url = new URL(item.url);
+                const domain = url.hostname;
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
+
+                historyItem.innerHTML = `
+                    <img class="favicon" src="${faviconUrl}" alt="">
+                    <div class="title">${item.title || item.url}</div>
+                    <div class="url">${item.url}</div>
+                `;
+
+                // 点击历史记录项
+                historyItem.addEventListener('click', () => {
+                    urlBar.value = item.url;
+                    historyAutocomplete.classList.remove('active');
+                    handleSearch();
+                });
+
+                historyAutocomplete.appendChild(historyItem);
+            });
+
+            historyAutocomplete.classList.add('active');
+            selectedIndex = -1;
+        });
+    }, 300); // 300毫秒的延迟，避免频繁搜索
+});
+
+// 点击其他地方关闭自动补全
+document.addEventListener('click', (e) => {
+    if (e.target !== urlBar && !historyAutocomplete.contains(e.target)) {
+        historyAutocomplete.classList.remove('active');
+    }
+});
+
+// 键盘导航功能
+urlBar.addEventListener('keydown', function (e) {
+    const items = historyAutocomplete.querySelectorAll('.history-item');
+
+    if (!historyAutocomplete.classList.contains('active') || items.length === 0) return;
+
+    // 向下箭头
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % items.length;
+        highlightItem(items, selectedIndex);
+    }
+    // 向上箭头
+    else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
+        highlightItem(items, selectedIndex);
+    }
+    // 回车键
+    else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        const url = items[selectedIndex].querySelector('.url').textContent;
+        urlBar.value = url;
+        historyAutocomplete.classList.remove('active');
+        handleSearch();
+    }
+    // Esc键
+    else if (e.key === 'Escape') {
+        historyAutocomplete.classList.remove('active');
+    }
+});
+
+// 高亮选中的历史记录项
+function highlightItem(items, index) {
+    items.forEach(item => item.classList.remove('selected'));
+    items[index].classList.add('selected');
+
+    // 确保选中项在视图中可见
+    const selected = items[index];
+    if (selected.offsetTop < historyAutocomplete.scrollTop) {
+        historyAutocomplete.scrollTop = selected.offsetTop;
+    } else if (selected.offsetTop + selected.offsetHeight > historyAutocomplete.scrollTop + historyAutocomplete.offsetHeight) {
+        historyAutocomplete.scrollTop = selected.offsetTop + selected.offsetHeight - historyAutocomplete.offsetHeight;
+    }
+} 
