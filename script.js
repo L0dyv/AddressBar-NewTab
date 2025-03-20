@@ -205,12 +205,35 @@ function handleSearch() {
 
     if (!input) return;
 
+    // 私有协议和常见协议列表
+    const knownProtocols = ['http:', 'https:', 'ftp:', 'file:', 'chrome:', 'edge:', 'about:',
+        'data:', 'view-source:', 'chrome-extension:', 'moz-extension:',
+        'ws:', 'wss:', 'mailto:', 'tel:', 'sms:', 'news:', 'nntp:'];
+    // 检查是否以协议开头
+    const hasProtocol = input.includes('://') || knownProtocols.some(protocol => input.startsWith(protocol));
+
     // 检查是否是URL
-    if (input.includes('.') && !input.includes(' ')) {
+    if (hasProtocol ||
+        (input.includes('.') && !input.includes(' ')) ||
+        input === 'localhost' ||
+        input.startsWith('localhost:') ||
+        /^[a-zA-Z0-9-]+:\/\//.test(input) ||
+        /^(localhost|127\.0\.0\.1|\[::1\])(\:[0-9]+)?(\/.*)?$/.test(input)) {
+
         let url = input;
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            url = 'https://' + url;
+
+        // 如果没有明确的协议，添加默认协议
+        if (!hasProtocol) {
+            // 对于localhost和IP地址特殊处理
+            if (url === 'localhost' || url.startsWith('localhost:') ||
+                url === '127.0.0.1' || url.startsWith('127.0.0.1:') ||
+                url === '[::1]' || url.startsWith('[::1]:')) {
+                url = 'http://' + url;
+            } else {
+                url = 'https://' + url;
+            }
         }
+
         window.location.href = url;
     } else {
         // 使用当前搜索引擎进行搜索
