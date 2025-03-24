@@ -12,7 +12,7 @@
     <div class="container">
         <div class="url-bar-container">
             <div class="search-engine-dropdown">
-                <button id="searchEngineBtn" class="search-engine-btn">
+                <button id="searchEngineBtn" class="search-engine-btn" tabindex="2">
                     <img id="searchEngineIcon" src="icons/search.svg" alt="搜索引擎图标">
                 </button>
                 <div class="search-engine-menu" id="searchEngineMenu">
@@ -31,7 +31,7 @@
                     <span id="searchEngineName"></span>
                     <span class="separator">|</span>
                 </div>
-                <input type="text" id="urlBar" placeholder="输入网址..." autofocus>
+                <input type="text" id="urlBar" placeholder="输入网址..." tabindex="1" autofocus>
                 <div id="historyAutocomplete" class="history-autocomplete">
                     <!-- 历史记录自动补全列表将通过JavaScript动态添加 -->
                 </div>

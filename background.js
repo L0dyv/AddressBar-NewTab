@@ -4,7 +4,7 @@ let newTabId = null;
 // 监听快捷键命令
 chrome.commands.onCommand.addListener((command) => {
     if (command === 'focus-address-bar') {
-        focusNewTabAddressBar();
+        focusOrCreateNewTab();
     }
 });
 
@@ -31,24 +31,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function createNewTab() {
     chrome.tabs.create({ url: 'chrome://newtab/' }, (tab) => {
         newTabId = tab.id;
-
-        // 等待新标签页加载完成
-        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-            if (tabId === newTabId && changeInfo.status === 'complete') {
-                // 移除监听器
-                chrome.tabs.onUpdated.removeListener(listener);
-
-                // 延迟一点时间确保DOM已经完全加载
-                setTimeout(() => {
-                    chrome.tabs.sendMessage(newTabId, { action: 'focusAddressBar' });
-                }, 200);
-            }
-        });
+        
+        // 监听新标签页加载并聚焦地址栏
+        waitForTabLoadAndFocus(newTabId);
     });
 }
 
-// 聚焦到新标签页的地址栏
-function focusNewTabAddressBar() {
+// 等待标签页加载并聚焦地址栏
+function waitForTabLoadAndFocus(tabId) {
+    chrome.tabs.onUpdated.addListener(function listener(updatedTabId, changeInfo) {
+        if (updatedTabId === tabId && changeInfo.status === 'complete') {
+            // 移除监听器
+            chrome.tabs.onUpdated.removeListener(listener);
+
+            // 延迟一点时间确保DOM已经完全加载
+            setTimeout(() => {
+                chrome.tabs.sendMessage(tabId, { action: 'focusAddressBar' });
+            }, 200);
+        }
+    });
+}
+
+// 聚焦到新标签页的地址栏，如果没有则创建
+function focusOrCreateNewTab() {
     chrome.tabs.query({ url: 'chrome://newtab/' }, (tabs) => {
         if (tabs.length > 0) {
             // 激活新标签页
@@ -61,4 +66,4 @@ function focusNewTabAddressBar() {
             createNewTab();
         }
     });
-} 
+}

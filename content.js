@@ -10,4 +10,16 @@ document.addEventListener('keydown', function (e) {
         // 打开新标签页并聚焦
         chrome.runtime.sendMessage({ action: 'openNewTabAndFocus' });
     }
+});
+
+// 监听来自background.js的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'focusAddressBar') {
+        // 获取地址栏输入框
+        const urlBar = document.getElementById('urlBar');
+        if (urlBar) {
+            urlBar.focus();
+            urlBar.select(); // 选中所有文本
+        }
+    }
 }); 
