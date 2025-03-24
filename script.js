@@ -40,6 +40,20 @@ const historyAutocomplete = document.getElementById('historyAutocomplete');
 let customSearchEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '[]');
 const defaultEngineIndex = localStorage.getItem('defaultSearchEngineIndex');
 
+// 监听来自background.js的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'focusAddressBar') {
+        if (urlBar) {
+            urlBar.focus();
+            urlBar.select(); // 选中所有文本
+        }
+        // 发送响应表示成功接收
+        if (sendResponse) {
+            sendResponse({ success: true });
+        }
+    }
+});
+
 // 初始化搜索引擎列表
 function initializeSearchEngines() {
     // 清空现有列表
@@ -161,6 +175,7 @@ searchEngineBtn.addEventListener('click', (e) => {
 // 点击其他地方关闭菜单
 document.addEventListener('click', () => {
     searchEngineMenu.classList.remove('active');
+    historyAutocomplete.classList.remove('active');
 });
 
 // 阻止菜单内部点击事件冒泡
@@ -206,11 +221,20 @@ function handleSearch() {
     if (!input) return;
 
     // 私有协议和常见协议列表
-    const knownProtocols = ['http:', 'https:', 'ftp:', 'file:', 'chrome:', 'edge:', 'about:',
+    const knownProtocols = ['http:', 'https:', 'ftp:', 'file:', 'about:',
         'data:', 'view-source:', 'chrome-extension:', 'moz-extension:',
         'ws:', 'wss:', 'mailto:', 'tel:', 'sms:', 'news:', 'nntp:'];
     // 检查是否以协议开头
     const hasProtocol = input.includes('://') || knownProtocols.some(protocol => input.startsWith(protocol));
+
+    // 检查是否是特殊的Chrome URL
+    if (input.startsWith('chrome://')) {
+        // 对于chrome://newtab/，使用我们的扩展页面
+        if (input === 'chrome://newtab/' || input === 'chrome://newtab') {
+            chrome.tabs.create({ url: chrome.runtime.getURL("newtab.html") });
+            return;
+        }
+    }
 
     // 检查是否是URL
     if (hasProtocol ||
@@ -257,6 +281,50 @@ initializeSearchEngines();
 let autocompleteTimeout;
 let selectedIndex = -1;
 
+// 用于获取并处理历史记录
+function fetchHistoryItems(query) {
+    chrome.history.search({
+        text: query,            // 搜索文本
+        maxResults: 10,         // 最多返回10条结果
+        startTime: 0            // 从最开始的历史记录中搜索
+    }, function (results) {
+        if (results.length === 0) {
+            historyAutocomplete.classList.remove('active');
+            return;
+        }
+
+        // 清空并填充历史记录列表
+        historyAutocomplete.innerHTML = '';
+        results.forEach((item, index) => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+
+            // 提取域名作为网站图标
+            const url = new URL(item.url);
+            const domain = url.hostname;
+            const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
+
+            historyItem.innerHTML = `
+                <img class="favicon" src="${faviconUrl}" alt="">
+                <div class="title">${item.title || item.url}</div>
+                <div class="url">${item.url}</div>
+            `;
+
+            // 点击历史记录项
+            historyItem.addEventListener('click', () => {
+                urlBar.value = item.url;
+                historyAutocomplete.classList.remove('active');
+                handleSearch();
+            });
+
+            historyAutocomplete.appendChild(historyItem);
+        });
+
+        historyAutocomplete.classList.add('active');
+        selectedIndex = -1;
+    });
+}
+
 // 监听输入框输入事件，显示历史记录自动补全
 urlBar.addEventListener('input', function () {
     clearTimeout(autocompleteTimeout);
@@ -270,54 +338,8 @@ urlBar.addEventListener('input', function () {
 
     // 延迟查询，避免频繁触发
     autocompleteTimeout = setTimeout(() => {
-        chrome.history.search({
-            text: query,            // 搜索文本
-            maxResults: 10,         // 最多返回10条结果
-            startTime: 0            // 从最开始的历史记录中搜索
-        }, function (results) {
-            if (results.length === 0) {
-                historyAutocomplete.classList.remove('active');
-                return;
-            }
-
-            // 清空并填充历史记录列表
-            historyAutocomplete.innerHTML = '';
-            results.forEach((item, index) => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-
-                // 提取域名作为网站图标
-                const url = new URL(item.url);
-                const domain = url.hostname;
-                const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
-
-                historyItem.innerHTML = `
-                    <img class="favicon" src="${faviconUrl}" alt="">
-                    <div class="title">${item.title || item.url}</div>
-                    <div class="url">${item.url}</div>
-                `;
-
-                // 点击历史记录项
-                historyItem.addEventListener('click', () => {
-                    urlBar.value = item.url;
-                    historyAutocomplete.classList.remove('active');
-                    handleSearch();
-                });
-
-                historyAutocomplete.appendChild(historyItem);
-            });
-
-            historyAutocomplete.classList.add('active');
-            selectedIndex = -1;
-        });
+        fetchHistoryItems(query);
     }, 300); // 300毫秒的延迟，避免频繁搜索
-});
-
-// 点击其他地方关闭自动补全
-document.addEventListener('click', (e) => {
-    if (e.target !== urlBar && !historyAutocomplete.contains(e.target)) {
-        historyAutocomplete.classList.remove('active');
-    }
 });
 
 // 键盘导航功能
@@ -364,4 +386,4 @@ function highlightItem(items, index) {
     } else if (selected.offsetTop + selected.offsetHeight > historyAutocomplete.scrollTop + historyAutocomplete.offsetHeight) {
         historyAutocomplete.scrollTop = selected.offsetTop + selected.offsetHeight - historyAutocomplete.offsetHeight;
     }
-} 
+}

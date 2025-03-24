@@ -9,14 +9,36 @@
     "permissions": [
         "storage",
         "tabs",
-        "history"
+        "history",
+        "scripting"
     ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"],
+            "run_at": "document_end"
+        }
+    ],
+    "commands": {
+        "focus-address-bar": {
+            "suggested_key": {
+                "default": "Ctrl+M"
+            },
+            "description": "聚焦到地址栏"
+        }
+    },
     "web_accessible_resources": [
         {
             "resources": [
                 "icons/*.svg"
             ],
-            "matches": []
+            "matches": ["<all_urls>"]
         }
     ]
 }
