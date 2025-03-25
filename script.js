@@ -253,7 +253,11 @@ function handleSearch() {
     }
 }
 
-// 获取历史记录
+// 历史记录自动补全功能
+let autocompleteTimeout;
+let selectedIndex = -1;
+
+// 用于获取并处理历史记录
 function fetchHistoryItems(query) {
     chrome.history.search({
         text: query,            // 搜索文本
@@ -293,10 +297,68 @@ function fetchHistoryItems(query) {
         });
 
         historyAutocomplete.classList.add('active');
+        selectedIndex = -1;
     });
 }
 
-// 高亮选中项
+// 监听输入框输入事件，显示历史记录自动补全
+urlBar.addEventListener('input', function () {
+    clearTimeout(autocompleteTimeout);
+
+    const query = urlBar.value.trim();
+    if (query.length < 2) {
+        historyAutocomplete.classList.remove('active');
+        historyAutocomplete.innerHTML = '';
+        return;
+    }
+
+    // 延迟查询，避免频繁触发
+    autocompleteTimeout = setTimeout(() => {
+        fetchHistoryItems(query);
+    }, 300); // 300毫秒的延迟，避免频繁搜索
+});
+
+// 键盘导航功能
+urlBar.addEventListener('keydown', function (e) {
+    const items = historyAutocomplete.querySelectorAll('.history-item');
+
+    if (!historyAutocomplete.classList.contains('active') || items.length === 0) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSearch();
+        }
+        return;
+    }
+
+    // 向下箭头
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % items.length;
+        highlightItem(items, selectedIndex);
+    }
+    // 向上箭头
+    else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
+        highlightItem(items, selectedIndex);
+    }
+    // 回车键
+    else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex >= 0) {
+            const url = items[selectedIndex].querySelector('.url').textContent;
+            urlBar.value = url;
+            historyAutocomplete.classList.remove('active');
+        }
+        handleSearch();
+    }
+    // Esc键
+    else if (e.key === 'Escape') {
+        historyAutocomplete.classList.remove('active');
+    }
+});
+
+// 高亮选中的历史记录项
 function highlightItem(items, index) {
     items.forEach(item => item.classList.remove('selected'));
     items[index].classList.add('selected');
@@ -310,107 +372,57 @@ function highlightItem(items, index) {
     }
 }
 
-// 页面加载完成时初始化
-document.addEventListener('DOMContentLoaded', () => {
-    initializeSearchEngines();
-    setupThemeDetection();
+// 初始化
+initializeSearchEngines();
+setupThemeDetection();
 
-    // 使输入框获得焦点
-    urlBar.focus();
-
-    // 切换搜索引擎菜单
-    searchEngineBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        searchEngineMenu.classList.toggle('active');
-    });
-
-    // 点击其他地方关闭菜单
-    document.addEventListener('click', () => {
-        searchEngineMenu.classList.remove('active');
-        historyAutocomplete.classList.remove('active');
-    });
-
-    // 阻止菜单内部点击事件冒泡
-    searchEngineMenu.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    // 阻止自动补全内部点击事件冒泡
-    historyAutocomplete.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    // 添加自定义搜索引擎
-    addCustomEngine.addEventListener('click', () => {
-        const name = customEngineName.value.trim();
-        const url = customEngineUrl.value.trim();
-
-        if (!name || !url) {
-            alert('请填写完整的搜索引擎信息');
-            return;
-        }
-
-        if (!url.includes('%s')) {
-            alert('URL必须包含%s作为搜索词占位符');
-            return;
-        }
-
-        const newEngine = {
-            name,
-            url,
-            icon: 'icons/search.svg' // 使用默认图标
-        };
-
-        customSearchEngines.push(newEngine);
-        localStorage.setItem('customSearchEngines', JSON.stringify(customSearchEngines));
-
-        addSearchEngineToList(newEngine, defaultSearchEngines.length + customSearchEngines.length - 1);
-
-        // 清空输入框
-        customEngineName.value = '';
-        customEngineUrl.value = '';
-    });
-
-    // 输入框事件处理
-    urlBar.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleSearch();
-        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            const items = historyAutocomplete.querySelectorAll('.history-item');
-            if (items.length === 0) return;
-
-            // 获取当前选中项的索引
-            let selectedIndex = -1;
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].classList.contains('selected')) {
-                    selectedIndex = i;
-                    break;
-                }
-            }
-
-            // 计算新的索引
-            if (e.key === 'ArrowDown') {
-                selectedIndex = (selectedIndex + 1) % items.length;
-            } else {
-                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-            }
-
-            highlightItem(items, selectedIndex);
-        }
-    });
-
-    // 输入内容变化时获取历史记录
-    urlBar.addEventListener('input', () => {
-        const query = urlBar.value.trim();
-        if (query) {
-            fetchHistoryItems(query);
-        } else {
-            historyAutocomplete.classList.remove('active');
-        }
-    });
-
-    // 转到按钮点击事件
-    goButton.addEventListener('click', handleSearch);
+// 切换搜索引擎菜单
+searchEngineBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    searchEngineMenu.classList.toggle('active');
 });
+
+// 点击其他地方关闭菜单
+document.addEventListener('click', () => {
+    searchEngineMenu.classList.remove('active');
+    historyAutocomplete.classList.remove('active');
+});
+
+// 阻止菜单内部点击事件冒泡
+searchEngineMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+});
+
+// 添加自定义搜索引擎
+addCustomEngine.addEventListener('click', () => {
+    const name = customEngineName.value.trim();
+    const url = customEngineUrl.value.trim();
+
+    if (!name || !url) {
+        alert('请填写完整的搜索引擎信息');
+        return;
+    }
+
+    if (!url.includes('%s')) {
+        alert('URL必须包含%s作为搜索词占位符');
+        return;
+    }
+
+    const newEngine = {
+        name,
+        url,
+        icon: 'icons/search.svg' // 使用默认图标
+    };
+
+    customSearchEngines.push(newEngine);
+    localStorage.setItem('customSearchEngines', JSON.stringify(customSearchEngines));
+
+    addSearchEngineToList(newEngine, defaultSearchEngines.length + customSearchEngines.length - 1);
+
+    // 清空输入框
+    customEngineName.value = '';
+    customEngineUrl.value = '';
+});
+
+// 绑定搜索事件
+goButton.addEventListener('click', handleSearch);
