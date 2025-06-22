@@ -227,21 +227,51 @@ const Index = () => {
           </div>
         </div>
 
-        {/* 快速链接区域 */}
+        {/* 快速链接区域 - Notion 画廊风格 */}
         {quickLinks.filter(l => l.enabled !== false).length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full">
             {quickLinks.filter(l => l.enabled !== false).map((link) => (
-              <Button
+              <div
                 key={link.id}
-                variant="ghost"
-                className="h-16 rounded-xl bg-gray-100/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                className="group relative overflow-hidden rounded-xl bg-white dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5"
                 onClick={() => window.location.href = link.url}
               >
-                <div className="text-center">
-                  {link.icon && <div className="text-2xl mb-1">{link.icon}</div>}
-                  <div className="text-sm font-medium">{link.name}</div>
+                <div className="p-4">
+                  {/* 图标容器 */}
+                  <div className="w-12 h-12 rounded-lg bg-white dark:bg-gray-700 shadow-sm group-hover:shadow-md transition-all duration-200 flex items-center justify-center mb-3 overflow-hidden">
+                    {link.icon ? (
+                      <div className="text-2xl group-hover:scale-110 transition-transform duration-200">
+                        {link.icon}
+                      </div>
+                    ) : (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=64`}
+                        alt={link.name}
+                        className="w-8 h-8 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* 标题 */}
+                  <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                    {link.name}
+                  </h3>
+
+                  {/* 可选：添加描述或 URL 预览 */}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {(() => {
+                      try {
+                        return new URL(link.url).hostname;
+                      } catch {
+                        return link.url;
+                      }
+                    })()}
+                  </p>
                 </div>
-              </Button>
+              </div>
             ))}
           </div>
         )}
