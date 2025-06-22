@@ -29,6 +29,7 @@ interface QuickLink {
   name: string;
   url: string;
   icon?: string;
+  enabled?: boolean;
 }
 
 interface QuickLinksConfigProps {
@@ -76,8 +77,8 @@ function SortableLinkItem({ link, onRemove }: SortableLinkItemProps) {
         </div>
         <div className="text-sm text-gray-500">{link.url}</div>
       </div>
-      <Button 
-        variant="ghost" 
+      <Button
+        variant="ghost"
         size="sm"
         onClick={() => onRemove(link.id)}
         className="text-red-600 hover:text-red-800"
@@ -90,7 +91,7 @@ function SortableLinkItem({ link, onRemove }: SortableLinkItemProps) {
 
 const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "", icon: "" });
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -120,9 +121,44 @@ const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigPro
     if (active.id !== over?.id) {
       const oldIndex = links.findIndex(link => link.id === active.id);
       const newIndex = links.findIndex(link => link.id === over?.id);
-      
+
       onLinksChange(arrayMove(links, oldIndex, newIndex));
     }
+  };
+
+  const toggleEnabled = (id: string, enabled: boolean) => {
+    onLinksChange(links.map(link =>
+      link.id === id ? { ...link, enabled } : link
+    ));
+  };
+
+  const DraggableRow = ({ link }: { link: QuickLink }) => {
+    const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id: link.id });
+    const style = { transform: CSS.Transform.toString(transform), transition };
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+        className="flex items-center gap-4 p-3 border rounded-lg">
+        <GripVertical className="text-gray-400 cursor-move" />
+        <input type="checkbox" className="w-5 h-5"
+          checked={link.enabled === true}
+          onChange={e => toggleEnabled(link.id, e.target.checked)} />
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            {link.icon && <span className="text-lg">{link.icon}</span>}
+            <div className="font-medium">{link.name}</div>
+          </div>
+          <div className="text-sm text-gray-500">{link.url}</div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => removeLink(link.id)}
+          className="text-red-600 hover:text-red-800"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -152,10 +188,9 @@ const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigPro
             <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
                 {links.map((link) => (
-                  <SortableLinkItem
+                  <DraggableRow
                     key={link.id}
                     link={link}
-                    onRemove={removeLink}
                   />
                 ))}
               </div>

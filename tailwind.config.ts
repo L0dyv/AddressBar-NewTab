@@ -61,6 +61,10 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				gray: {
+					900: '#0F0F10',   // Linear 深黑
+					800: '#18181A',   // 稍微浅一点，用于 hover 等
 				}
 			},
 			borderRadius: {

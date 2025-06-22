@@ -30,6 +30,7 @@ interface SearchEngine {
   url: string;
   isDefault?: boolean;
   isAI?: boolean;
+  enabled?: boolean;
 }
 
 interface SearchEngineConfigProps {
@@ -42,9 +43,10 @@ interface SortableEngineItemProps {
   engine: SearchEngine;
   onSetDefault: (id: string) => void;
   onRemove: (id: string) => void;
+  onToggleEnabled: (id: string, enabled: boolean) => void;
 }
 
-function SortableEngineItem({ engine, onSetDefault, onRemove }: SortableEngineItemProps) {
+function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }: SortableEngineItemProps) {
   const {
     attributes,
     listeners,
@@ -91,8 +93,8 @@ function SortableEngineItem({ engine, onSetDefault, onRemove }: SortableEngineIt
             默认
           </span>
         ) : (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => onSetDefault(engine.id)}
           >
@@ -100,8 +102,8 @@ function SortableEngineItem({ engine, onSetDefault, onRemove }: SortableEngineIt
           </Button>
         )}
         {engine.id !== 'kagi-assistant' && (
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => onRemove(engine.id)}
             className="text-red-600 hover:text-red-800"
@@ -110,13 +112,19 @@ function SortableEngineItem({ engine, onSetDefault, onRemove }: SortableEngineIt
           </Button>
         )}
       </div>
+      <input
+        type="checkbox"
+        className="w-5 h-5"
+        checked={engine.enabled !== false}
+        onChange={e => onToggleEnabled(engine.id, e.target.checked)}
+      />
     </div>
   );
 }
 
 const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineConfigProps) => {
   const [newEngine, setNewEngine] = useState({ name: "", url: "" });
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -124,14 +132,28 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
     })
   );
 
-  // 默认搜索引擎配置
-  const defaultEngines: SearchEngine[] = [
-    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
-    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
-    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
-    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
-    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
+  const BUILTIN_ENGINES: SearchEngine[] = [
+    { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=' },
+    { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=' },
+    { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=' },
+    { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+    { id: 'yahoo', name: 'Yahoo', url: 'https://search.yahoo.com/search?p=' },
+    { id: 'sogou', name: '搜狗', url: 'https://www.sogou.com/web?query=' },
+    { id: 'yandex', name: 'Yandex', url: 'https://yandex.com/search/?text=' },
+    { id: 'startpage', name: 'StartPage', url: 'https://www.startpage.com/do/search?q=' },
+    { id: 'ecosia', name: 'Ecosia', url: 'https://www.ecosia.org/search?q=' },
+    { id: 'kagi-assistant', name: 'Kagi Assistant', url: 'https://kagi.com/assistant', isAI: true }
   ];
+
+  const mergeBuiltinEngines = (userEngines: SearchEngine[]) => {
+    const merged = [...userEngines];
+    BUILTIN_ENGINES.forEach(builtin => {
+      if (!merged.find(e => e.id === builtin.id)) {
+        merged.push({ ...builtin, enabled: false });
+      }
+    });
+    return merged;
+  };
 
   const addEngine = () => {
     if (newEngine.name && newEngine.url) {
@@ -150,14 +172,23 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
   };
 
   const setDefault = (id: string) => {
-    onEnginesChange(engines.map(engine => ({ 
-      ...engine, 
-      isDefault: engine.id === id 
-    })));
+    onEnginesChange(
+      engines.map(engine => ({
+        ...engine,
+        isDefault: engine.id === id,
+        enabled: engine.id === id ? true : engine.enabled,
+      }))
+    );
   };
 
   const resetToDefault = () => {
-    onEnginesChange(defaultEngines);
+    onEnginesChange(mergeBuiltinEngines(engines));
+  };
+
+  const toggleEnabled = (id: string, enabled: boolean) => {
+    onEnginesChange(engines.map(engine =>
+      engine.id === id ? { ...engine, enabled } : engine
+    ));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -166,7 +197,7 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
     if (active.id !== over?.id) {
       const oldIndex = engines.findIndex(engine => engine.id === active.id);
       const newIndex = engines.findIndex(engine => engine.id === over?.id);
-      
+
       onEnginesChange(arrayMove(engines, oldIndex, newIndex));
     }
   };
@@ -200,6 +231,7 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
                   engine={engine}
                   onSetDefault={setDefault}
                   onRemove={removeEngine}
+                  onToggleEnabled={toggleEnabled}
                 />
               ))}
             </div>
