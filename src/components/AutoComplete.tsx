@@ -34,17 +34,17 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       console.log('Extension not available or empty text for history');
       return [];
     }
-    
+
     try {
       console.log('Searching Chrome history for:', text);
-      
+
       const results = await chrome.history.search({
         text: text,
         maxResults: 8
       });
-      
+
       console.log('Chrome history results:', results);
-      
+
       return results.map((item, index) => ({
         id: `history-${index}`,
         title: item.title || item.url || '',
@@ -64,14 +64,14 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       console.log('Extension not available for bookmarks or empty text');
       return [];
     }
-    
+
     try {
       console.log('Searching Chrome bookmarks for:', text);
-      
+
       const bookmarkTree = await chrome.bookmarks.getTree();
-      
+
       const allBookmarks: chrome.bookmarks.BookmarkTreeNode[] = [];
-      
+
       const extractBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[]) => {
         nodes.forEach(node => {
           if (node.url) {
@@ -81,18 +81,18 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           }
         });
       };
-      
+
       extractBookmarks(bookmarkTree);
-      
+
       const filtered = allBookmarks
-        .filter(bookmark => 
+        .filter(bookmark =>
           bookmark.title?.toLowerCase().includes(text.toLowerCase()) ||
           bookmark.url?.toLowerCase().includes(text.toLowerCase())
         )
         .slice(0, 5);
-      
+
       console.log('Chrome bookmark results:', filtered);
-      
+
       return filtered.map((bookmark, index) => ({
         id: `bookmark-${index}`,
         title: bookmark.title || bookmark.url || '',
@@ -112,15 +112,15 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
     const firstSuggestion = suggestions[0];
     let completionText = firstSuggestion.url.replace(/^https?:\/\//, '').replace(/^www\./, '');
-    
+
     if (completionText.includes('/')) {
       completionText = completionText.split('/')[0];
     }
-    
+
     if (completionText.toLowerCase().startsWith(query.toLowerCase())) {
       const input = inputRef.current;
       const currentValue = input.value;
-      
+
       if (currentValue === query) {
         input.value = completionText;
         input.setSelectionRange(query.length, completionText.length);
@@ -142,7 +142,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       let historyResults: SuggestionItem[] = [];
       let bookmarkResults: SuggestionItem[] = [];
-      
+
       if (isExtension) {
         console.log('Using Chrome API for suggestions');
         [historyResults, bookmarkResults] = await Promise.all([
@@ -152,14 +152,14 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       } else {
         console.log('Chrome extension not available, no suggestions');
       }
-      
+
       const allSuggestions = [...historyResults, ...bookmarkResults];
       console.log('Total suggestions found:', allSuggestions.length);
-      
+
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
-      
+
       // 应用内联补全
       if (allSuggestions.length > 0) {
         applyInlineCompletion(query, allSuggestions);
@@ -175,7 +175,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
-    
+
     debounceRef.current = setTimeout(() => {
       getSuggestions(query);
     }, 300);
@@ -185,7 +185,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     const newValue = e.target.value;
     console.log('Input changed to:', newValue);
     onChange(newValue);
-    
+
     if (!isComposing) {
       debouncedGetSuggestions(newValue);
     }
@@ -223,7 +223,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < suggestions.length - 1 ? prev + 1 : prev
         );
         break;
@@ -298,6 +298,49 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
   }, [isExtension]);
 
+  // 自动聚焦到输入框
+  useEffect(() => {
+    // 多次尝试聚焦，确保能够获得焦点
+    const focusAttempts = [50, 150, 300, 500];
+    const timers: NodeJS.Timeout[] = [];
+
+    focusAttempts.forEach(delay => {
+      const timer = setTimeout(() => {
+        if (inputRef.current && document.activeElement !== inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, delay);
+      timers.push(timer);
+    });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, []);
+
+  // 监听键盘 & 组合事件，任何输入法都能触发
+  useEffect(() => {
+    const tryFocus = () => {
+      if (document.activeElement !== inputRef.current && inputRef.current) {
+        inputRef.current.focus()
+      }
+    }
+
+    // 中文/日文等输入法开始时
+    const onCompStart = () => tryFocus()
+    // 任意按键（排除功能键）按下时
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) tryFocus()
+    }
+
+    document.addEventListener('compositionstart', onCompStart)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('compositionstart', onCompStart)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
   return (
     <div className="relative">
       <input
@@ -311,19 +354,19 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         className={className}
         autoComplete="off"
         spellCheck={false}
+        autoFocus
       />
-      
+
       {showSuggestions && suggestions.length > 0 && (
-        <div 
+        <div
           ref={suggestionsRef}
           className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto"
         >
           {suggestions.map((suggestion, index) => (
             <div
               key={suggestion.id}
-              className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors ${
-                index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30' : ''
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors ${index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30' : ''
+                }`}
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
@@ -344,11 +387,10 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  suggestion.type === 'history' 
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' 
-                    : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                }`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${suggestion.type === 'history'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                  : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                  }`}>
                   {suggestion.type === 'history' ? '历史' : '书签'}
                 </span>
               </div>
