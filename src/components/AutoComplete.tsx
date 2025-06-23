@@ -320,26 +320,36 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
   // 监听键盘 & 组合事件，任何输入法都能触发
   useEffect(() => {
+    // 判断事件目标是否为可编辑元素
+    const isInteractive = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      target.closest('input, textarea, [contenteditable="true"]');
+
     const tryFocus = () => {
       if (document.activeElement !== inputRef.current && inputRef.current) {
-        inputRef.current.focus()
+        inputRef.current.focus();
       }
-    }
+    };
 
     // 中文/日文等输入法开始时
-    const onCompStart = () => tryFocus()
-    // 任意按键（排除功能键）按下时
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!e.ctrlKey && !e.altKey && !e.metaKey) tryFocus()
-    }
+    const onCompStart = (e: CompositionEvent) => {
+      if (!isInteractive(e.target)) tryFocus();
+    };
 
-    document.addEventListener('compositionstart', onCompStart)
-    document.addEventListener('keydown', onKeyDown)
+    // 任意字符按键（排除功能键）按下时
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (isInteractive(e.target)) return;
+      tryFocus();
+    };
+
+    document.addEventListener('compositionstart', onCompStart as any);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('compositionstart', onCompStart)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [])
+      document.removeEventListener('compositionstart', onCompStart as any);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
 
   return (
     <div className="relative">
