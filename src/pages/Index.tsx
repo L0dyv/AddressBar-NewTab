@@ -70,7 +70,15 @@ const Index = () => {
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() => {
     try {
       const saved = localStorage.getItem('quickLinks');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 确保所有链接都有 enabled 字段，默认为 true
+        return parsed.map((link: QuickLink) => ({
+          ...link,
+          enabled: link.enabled !== undefined ? link.enabled : true
+        }));
+      }
+      return [];
     } catch {
       return [];
     }
@@ -163,17 +171,17 @@ const Index = () => {
   }, [searchEngines]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 transition-colors">
       {/* 设置和主题切换按钮 */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+            <Button variant="ghost" size="icon" className="text-gray-600 dark:text-muted-foreground hover:text-gray-800 dark:hover:text-foreground">
               <Settings className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 z-50">
+          <DropdownMenuContent align="end" className="bg-white dark:bg-card border-gray-200 dark:border-border z-50">
             <DropdownMenuItem onClick={() => setShowSettings(true)}>
               搜索引擎设置
             </DropdownMenuItem>
@@ -194,13 +202,13 @@ const Index = () => {
               onChange={setQuery}
               onSubmit={handleSubmit}
               placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
-              className="w-full h-16 text-xl px-8 pr-32 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-300 shadow-xl hover:shadow-2xl focus:shadow-2xl"
+              className="w-full h-16 text-xl px-8 pr-32 rounded-full bg-white dark:bg-card border-2 border-gray-300 dark:border-border text-gray-900 dark:text-foreground placeholder:text-gray-500 dark:placeholder:text-muted-foreground focus:border-blue-500 dark:focus:border-ring focus:outline-none transition-all duration-300 shadow-xl hover:shadow-2xl focus:shadow-2xl"
             />
 
             {/* 搜索按钮在输入框内 */}
             <Button
               onClick={() => handleSubmit(query)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 px-6 rounded-full bg-blue-600 dark:bg-foreground hover:bg-blue-700 dark:hover:bg-foreground/90 text-white dark:text-background font-medium shadow-sm hover:shadow-md transition-all duration-200"
             >
               {isKagiSelected ? "提问" : "搜索"}
             </Button>
@@ -213,15 +221,15 @@ const Index = () => {
                 key={engine.id}
                 type="button"
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 bg-transparent"
+                  ? "bg-blue-600 dark:bg-accent text-white dark:text-accent-foreground shadow-sm"
+                  : "text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:hover:bg-accent hover:text-gray-800 dark:hover:text-accent-foreground bg-transparent"
                   }`}
                 onClick={() => handleSearchEngineChange(engine.id)}
                 onMouseDown={(e) => e.preventDefault()}
               >
                 {engine.name}
                 {engine.isAI && (
-                  <span className="ml-1 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">AI</span>
+                  <span className="ml-1 text-xs bg-blue-500 dark:bg-muted text-white dark:text-muted-foreground px-1.5 py-0.5 rounded">AI</span>
                 )}
               </button>
             ))}
@@ -229,17 +237,17 @@ const Index = () => {
         </div>
 
         {/* 快速链接区域 - Notion 画廊风格 */}
-        {quickLinks.filter(l => l.enabled !== false).length > 0 && (
+        {quickLinks.filter(l => l.enabled === true).length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full">
-            {quickLinks.filter(l => l.enabled !== false).map((link) => (
+            {quickLinks.filter(l => l.enabled === true).map((link) => (
               <div
                 key={link.id}
-                className="group relative overflow-hidden rounded-xl bg-white dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-xl bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-accent border border-gray-200 dark:border-border hover:border-gray-300 dark:hover:border-border/80 transition-all duration-200 cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5"
                 onClick={() => window.location.href = link.url}
               >
                 <div className="p-4">
                   {/* 图标容器 */}
-                  <div className="w-12 h-12 rounded-lg bg-white dark:bg-gray-700 shadow-sm group-hover:shadow-md transition-all duration-200 flex items-center justify-center mb-3 overflow-hidden">
+                  <div className="w-12 h-12 rounded-lg bg-white dark:bg-muted shadow-sm group-hover:shadow-md transition-all duration-200 flex items-center justify-center mb-3 overflow-hidden">
                     {link.icon ? (
                       <div className="text-2xl group-hover:scale-110 transition-transform duration-200">
                         {link.icon}
@@ -257,12 +265,12 @@ const Index = () => {
                   </div>
 
                   {/* 标题 */}
-                  <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                  <h3 className="text-sm font-medium text-gray-800 dark:text-foreground truncate">
                     {link.name}
                   </h3>
 
                   {/* 可选：添加描述或 URL 预览 */}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1 truncate">
                     {(() => {
                       try {
                         return new URL(link.url).hostname;

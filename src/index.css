@@ -47,41 +47,54 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* ===== Linear 深色 v2（去除紫色高亮）===== */
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    /* 基础底色 */
+    --background: 240 3% 6%;
+    /* #0F0F10 */
+    --foreground: 0 0% 97%;
+    /* #F7F7F7 */
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    /* 表面 */
+    --card: 240 3% 8%;
+    --card-foreground: 0 0% 97%;
+    --popover: 240 3% 10%;
+    --popover-foreground: 0 0% 97%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    /* 文字主色 */
+    --primary: 0 0% 97%;
+    --primary-foreground: 240 3% 6%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    /* 次级表面 / Hover */
+    --secondary: 240 3% 12%;
+    --secondary-foreground: 0 0% 94%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 240 3% 12%;
+    --muted-foreground: 240 2% 60%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    /* 中性高亮（不使用紫色）*/
+    --accent: 240 3% 22%;
+    /* #353538 */
+    --accent-foreground: 0 0% 97%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    /* 危险色 */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* 边框 / 输入框 / Ring */
+    --border: 240 3% 16%;
+    --input: 240 3% 16%;
+    --ring: 240 3% 32%;
+
+    /* 侧边栏 */
+    --sidebar-background: 240 3% 6%;
+    --sidebar-foreground: 0 0% 94%;
+    --sidebar-primary: 240 3% 22%;
+    --sidebar-primary-foreground: 0 0% 97%;
+    --sidebar-accent: 240 3% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 3% 16%;
+    --sidebar-ring: 240 3% 22%;
   }
 }
 
@@ -92,5 +105,48 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* 自定义样式增强 */
+@layer utilities {
+
+  /* 移除蓝色系统高亮 */
+  input:focus,
+  button:focus {
+    outline: none !important;
+  }
+
+  /* 更平滑的过渡 */
+  * {
+    transition-property: color, background-color, border-color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* 更精细的阴影 */
+  .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  }
+
+  /* 深色模式下的阴影调整 */
+  .dark .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
   }
 }

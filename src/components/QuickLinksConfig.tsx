@@ -37,57 +37,6 @@ interface QuickLinksConfigProps {
   onLinksChange: (links: QuickLink[]) => void;
 }
 
-interface SortableLinkItemProps {
-  link: QuickLink;
-  onRemove: (id: string) => void;
-}
-
-function SortableLinkItem({ link, onRemove }: SortableLinkItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: link.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800"
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-      >
-        <GripVertical className="h-5 w-5" />
-      </div>
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          {link.icon && <span className="text-lg">{link.icon}</span>}
-          <div className="font-medium">{link.name}</div>
-        </div>
-        <div className="text-sm text-gray-500">{link.url}</div>
-      </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onRemove(link.id)}
-        className="text-red-600 hover:text-red-800"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-}
-
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "", icon: "" });
 
@@ -101,13 +50,14 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const addLink = () => {
     if (newLink.name && newLink.url) {
       const id = newLink.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-      onLinksChange([...links, { ...newLink, id }]);
+      onLinksChange([...links, { ...newLink, id, enabled: true }]);
       setNewLink({ name: "", url: "", icon: "" });
     }
   };
 
   const removeLink = (id: string) => {
-    onLinksChange(links.filter(link => link.id !== id));
+    const filteredLinks = links.filter(link => link.id !== id);
+    onLinksChange(filteredLinks);
   };
 
   const resetToDefault = () => {
@@ -126,21 +76,35 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   };
 
   const toggleEnabled = (id: string, enabled: boolean) => {
-    onLinksChange(links.map(link =>
+    const updatedLinks = links.map(link =>
       link.id === id ? { ...link, enabled } : link
-    ));
+    );
+    onLinksChange(updatedLinks);
   };
 
   const DraggableRow = ({ link }: { link: QuickLink }) => {
     const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id: link.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      toggleEnabled(link.id, e.target.checked);
+    };
+
+    const handleRemoveClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      removeLink(link.id);
+    };
+
     return (
-      <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+      <div ref={setNodeRef} style={style}
         className="flex items-center gap-4 p-3 border rounded-lg">
-        <GripVertical className="text-gray-400 cursor-move" />
+        <div {...attributes} {...listeners} className="cursor-grab hover:cursor-grabbing">
+          <GripVertical className="text-gray-400" />
+        </div>
         <input type="checkbox" className="w-5 h-5"
           checked={link.enabled === true}
-          onChange={e => toggleEnabled(link.id, e.target.checked)} />
+          onChange={handleCheckboxChange} />
         <div className="flex-1">
           <div className="flex items-center gap-2">
             {link.icon && <span className="text-lg">{link.icon}</span>}
@@ -151,7 +115,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => removeLink(link.id)}
+          onClick={handleRemoveClick}
           className="text-red-600 hover:text-red-800"
         >
           <Trash2 className="h-4 w-4" />
