@@ -11,6 +11,7 @@ import SearchEngineConfig from "@/components/SearchEngineConfig";
 import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
+import SettingsModal from "@/components/SettingsModal";
 
 interface SearchEngine {
   id: string;
@@ -278,30 +279,28 @@ const Index = () => {
       </div>
 
       {/* 设置弹窗 */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <SearchEngineConfig
-              engines={searchEngines}
-              onEnginesChange={setSearchEngines}
-              onClose={() => setShowSettings(false)}
-            />
-          </div>
-        </div>
-      )}
+      <SettingsModal
+        title="搜索引擎配置"
+        open={showSettings}
+        onOpenChange={setShowSettings}
+      >
+        <SearchEngineConfig
+          engines={searchEngines}
+          onEnginesChange={setSearchEngines}
+        />
+      </SettingsModal>
 
       {/* 快速链接配置弹窗 */}
-      {showQuickLinksConfig && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <QuickLinksConfig
-              links={quickLinks}
-              onLinksChange={setQuickLinks}
-              onClose={() => setShowQuickLinksConfig(false)}
-            />
-          </div>
-        </div>
-      )}
+      <SettingsModal
+        title="快速链接配置"
+        open={showQuickLinksConfig}
+        onOpenChange={setShowQuickLinksConfig}
+      >
+        <QuickLinksConfig
+          links={quickLinks}
+          onLinksChange={setQuickLinks}
+        />
+      </SettingsModal>
     </div>
   );
 };

@@ -35,7 +35,6 @@ interface QuickLink {
 interface QuickLinksConfigProps {
   links: QuickLink[];
   onLinksChange: (links: QuickLink[]) => void;
-  onClose: () => void;
 }
 
 interface SortableLinkItemProps {
@@ -89,7 +88,7 @@ function SortableLinkItem({ link, onRemove }: SortableLinkItemProps) {
   );
 }
 
-const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigProps) => {
+const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "", icon: "" });
 
   const sensors = useSensors(
@@ -163,19 +162,8 @@ const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigPro
 
   return (
     <Card className="border-0 shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle>快速链接配置</CardTitle>
-        <div className="flex items-center gap-2">
-          {links.length > 0 && (
-            <Button variant="outline" size="sm" onClick={resetToDefault}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              清空所有
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有快速链接列表 */}

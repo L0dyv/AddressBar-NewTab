@@ -36,7 +36,6 @@ interface SearchEngine {
 interface SearchEngineConfigProps {
   engines: SearchEngine[];
   onEnginesChange: (engines: SearchEngine[]) => void;
-  onClose: () => void;
 }
 
 interface SortableEngineItemProps {
@@ -122,7 +121,7 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
   );
 }
 
-const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineConfigProps) => {
+const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProps) => {
   const [newEngine, setNewEngine] = useState({ name: "", url: "" });
 
   const sensors = useSensors(
@@ -204,17 +203,8 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
 
   return (
     <Card className="border-0 shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle>搜索引擎配置</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={resetToDefault}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            重置默认
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有搜索引擎列表 */}
