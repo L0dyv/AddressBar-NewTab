@@ -3,15 +3,7 @@ import { Settings } from "lucide-react";
 import AutoComplete from "@/components/AutoComplete";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
-
-interface SearchEngine {
-    id: string;
-    name: string;
-    url: string;
-    isDefault?: boolean;
-    isAI?: boolean;
-    enabled?: boolean;
-}
+import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 
 interface QuickLink {
     id: string;
@@ -21,33 +13,19 @@ interface QuickLink {
     enabled?: boolean;
 }
 
-const defaultSearchEngines: SearchEngine[] = [
-    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
-    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
-    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
-    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
-    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
-];
-
 export default function Popup() {
     const [query, setQuery] = useState("");
     const { theme } = useTheme();
     const [showQuickLinks, setShowQuickLinks] = useState(false);
 
-    // 从 localStorage 加载搜索引擎配置（与主页共享）
+    // 从 localStorage 加载搜索引擎配置（与主页共享），使用方案B自动补齐
     const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
         try {
             const saved = localStorage.getItem('searchEngines');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                const hasKagiAssistant = parsed.some((engine: SearchEngine) => engine.id === 'kagi-assistant');
-                if (!hasKagiAssistant) {
-                    const kagiAssistant = defaultSearchEngines.find(e => e.id === 'kagi-assistant');
-                    if (kagiAssistant) {
-                        parsed.push(kagiAssistant);
-                    }
-                }
-                return parsed;
+                // 方案B：自动补齐所有内置引擎
+                return mergeBuiltinEngines(parsed);
             }
             return defaultSearchEngines;
         } catch {
@@ -220,8 +198,8 @@ export default function Popup() {
                                 key={engine.id}
                                 type="button"
                                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
-                                        ? "bg-blue-600 dark:bg-accent text-white dark:text-accent-foreground shadow-sm"
-                                        : "text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:hover:bg-accent hover:text-gray-800 dark:hover:text-accent-foreground bg-transparent"
+                                    ? "bg-blue-600 dark:bg-accent text-white dark:text-accent-foreground shadow-sm"
+                                    : "text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:hover:bg-accent hover:text-gray-800 dark:hover:text-accent-foreground bg-transparent"
                                     }`}
                                 onClick={() => handleSearchEngineChange(engine.id)}
                                 onMouseDown={(e) => e.preventDefault()}

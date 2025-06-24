@@ -23,6 +23,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 
 interface SearchEngine {
   id: string;
@@ -59,7 +60,6 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   // 判断是否为当前默认搜索引擎
@@ -69,12 +69,12 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800 ${isDragging ? 'shadow-lg z-50' : ''}`}
+      className={`flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800 ${isDragging ? 'shadow-lg z-50 cursor-grabbing' : ''}`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-none"
+        className={`drag-handle text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-none ${isDragging ? 'drag-handle-active' : ''}`}
       >
         <GripVertical className="h-5 w-5" />
       </div>
@@ -106,7 +106,7 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
             设为默认
           </Button>
         )}
-        {engine.id !== 'kagi-assistant' && (
+        {engine.id !== 'kagi-assistant' && !engine.isDefault && (
           <Button
             variant="ghost"
             size="sm"
@@ -143,29 +143,15 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
     })
   );
 
-  const BUILTIN_ENGINES: SearchEngine[] = [
-    { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=' },
-    { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=' },
-    { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=' },
-    { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+  // 使用扩展的内置引擎列表（包含更多选项）
+  const EXTRA_BUILTIN_ENGINES: SearchEngine[] = [
     { id: 'kagi', name: 'Kagi', url: 'https://kagi.com/search?q=' },
     { id: 'yahoo', name: 'Yahoo', url: 'https://search.yahoo.com/search?p=' },
     { id: 'sogou', name: '搜狗', url: 'https://www.sogou.com/web?query=' },
     { id: 'yandex', name: 'Yandex', url: 'https://yandex.com/search/?text=' },
     { id: 'startpage', name: 'StartPage', url: 'https://www.startpage.com/do/search?q=' },
     { id: 'ecosia', name: 'Ecosia', url: 'https://www.ecosia.org/search?q=' },
-    { id: 'kagi-assistant', name: 'Kagi Assistant', url: 'https://kagi.com/assistant', isAI: true }
   ];
-
-  const mergeBuiltinEngines = (userEngines: SearchEngine[]) => {
-    const merged = [...userEngines];
-    BUILTIN_ENGINES.forEach(builtin => {
-      if (!merged.find(e => e.id === builtin.id)) {
-        merged.push({ ...builtin, enabled: false });
-      }
-    });
-    return merged;
-  };
 
   const addEngine = () => {
     if (newEngine.name && newEngine.url) {
@@ -180,6 +166,23 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
     if (id === 'kagi-assistant') {
       return;
     }
+
+    // 防止删除默认搜索引擎
+    const targetEngine = engines.find(e => e.id === id);
+    if (targetEngine?.isDefault) {
+      return;
+    }
+
+    // 记录内置引擎的删除
+    const isBuiltin = defaultSearchEngines.some(e => e.id === id);
+    if (isBuiltin) {
+      const del = JSON.parse(localStorage.getItem("deletedBuiltinIds") ?? "[]");
+      if (!del.includes(id)) {
+        del.push(id);
+        localStorage.setItem("deletedBuiltinIds", JSON.stringify(del));
+      }
+    }
+
     onEnginesChange(engines.filter(engine => engine.id !== id));
   };
 
@@ -194,7 +197,9 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   };
 
   const resetToDefault = () => {
-    onEnginesChange(mergeBuiltinEngines(engines));
+    localStorage.removeItem('deletedBuiltinIds'); // 清除删除记录
+    onEnginesChange([...defaultSearchEngines]);
+    localStorage.removeItem('currentSearchEngine');
   };
 
   const toggleEnabled = (id: string, enabled: boolean) => {

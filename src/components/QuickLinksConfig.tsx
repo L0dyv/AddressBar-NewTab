@@ -99,8 +99,8 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
     return (
       <div ref={setNodeRef} style={style}
         className="flex items-center gap-4 p-3 border rounded-lg">
-        <div {...attributes} {...listeners} className="cursor-grab hover:cursor-grabbing">
-          <GripVertical className="text-gray-400" />
+        <div {...attributes} {...listeners} className="drag-handle text-gray-400">
+          <GripVertical />
         </div>
         <input type="checkbox" className="w-5 h-5"
           checked={link.enabled === true}

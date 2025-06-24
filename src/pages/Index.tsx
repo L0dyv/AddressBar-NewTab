@@ -12,15 +12,7 @@ import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
 import SettingsModal from "@/components/SettingsModal";
-
-interface SearchEngine {
-  id: string;
-  name: string;
-  url: string;
-  isDefault?: boolean;
-  isAI?: boolean;
-  enabled?: boolean;
-}
+import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 
 interface QuickLink {
   id: string;
@@ -35,30 +27,14 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
 
-  // 默认搜索引擎（包含Kagi Assistant）
-  const defaultSearchEngines: SearchEngine[] = [
-    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
-    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
-    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
-    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
-    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
-  ];
-
-  // 从 localStorage 加载搜索引擎配置
+  // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
     try {
       const saved = localStorage.getItem('searchEngines');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // 确保 Kagi Assistant 存在
-        const hasKagiAssistant = parsed.some((engine: SearchEngine) => engine.id === 'kagi-assistant');
-        if (!hasKagiAssistant) {
-          const kagiAssistant = defaultSearchEngines.find(e => e.id === 'kagi-assistant');
-          if (kagiAssistant) {
-            parsed.push(kagiAssistant);
-          }
-        }
-        return parsed;
+        // 方案B：自动补齐所有内置引擎
+        return mergeBuiltinEngines(parsed);
       }
       return defaultSearchEngines;
     } catch {

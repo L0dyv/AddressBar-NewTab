@@ -149,4 +149,25 @@
   .dark .shadow-lg {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
   }
+
+  /* === Drag handle cursors ============================================== */
+  /* 浅色模式使用深色光标 */
+  .drag-handle {
+    cursor: url('/drag.svg') 12 12, grab;
+  }
+
+  .drag-handle:active,
+  .drag-handle-active {
+    cursor: url('/drag.svg') 12 12, grabbing;
+  }
+
+  /* 深色模式使用系统默认光标 */
+  .dark .drag-handle {
+    cursor: grab;
+  }
+
+  .dark .drag-handle:active,
+  .dark .drag-handle-active {
+    cursor: grabbing;
+  }
 }
