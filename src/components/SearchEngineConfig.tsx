@@ -52,23 +52,29 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: engine.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
   };
+
+  // 判断是否为当前默认搜索引擎
+  const isCurrentDefault = engine.isDefault;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800"
+      className={`flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800 ${isDragging ? 'shadow-lg z-50' : ''}`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-none"
       >
         <GripVertical className="h-5 w-5" />
       </div>
@@ -116,6 +122,8 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
         className="w-5 h-5"
         checked={engine.enabled !== false}
         onChange={e => onToggleEnabled(engine.id, e.target.checked)}
+        disabled={isCurrentDefault}
+        title={isCurrentDefault ? "默认搜索引擎不能取消勾选" : ""}
       />
     </div>
   );
@@ -125,7 +133,11 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   const [newEngine, setNewEngine] = useState({ name: "", url: "" });
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -136,6 +148,7 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
     { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=' },
     { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=' },
     { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+    { id: 'kagi', name: 'Kagi', url: 'https://kagi.com/search?q=' },
     { id: 'yahoo', name: 'Yahoo', url: 'https://search.yahoo.com/search?p=' },
     { id: 'sogou', name: '搜狗', url: 'https://www.sogou.com/web?query=' },
     { id: 'yandex', name: 'Yandex', url: 'https://yandex.com/search/?text=' },
@@ -185,6 +198,12 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   };
 
   const toggleEnabled = (id: string, enabled: boolean) => {
+    // 默认搜索引擎不允许取消勾选
+    const targetEngine = engines.find(e => e.id === id);
+    if (targetEngine?.isDefault && !enabled) {
+      return; // 不允许取消默认搜索引擎
+    }
+
     onEnginesChange(engines.map(engine =>
       engine.id === id ? { ...engine, enabled } : engine
     ));
@@ -204,7 +223,18 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
-        <CardTitle>搜索引擎配置</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>搜索引擎配置</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetToDefault}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            重置为默认
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有搜索引擎列表 */}
