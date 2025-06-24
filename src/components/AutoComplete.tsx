@@ -40,7 +40,8 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
       const results = await chrome.history.search({
         text: text,
-        maxResults: 8
+        startTime: 0,
+        maxResults: 50
       });
 
       console.log('Chrome history results:', results);
