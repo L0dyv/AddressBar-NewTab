@@ -28,3 +28,10 @@ dist.pem
 
 # ignore
 *.*ignore
+
+# Plan Files
+TODO.md
+
+#cursor files
+.specstory/
+.cursorindexingignore
