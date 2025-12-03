@@ -37,6 +37,25 @@ interface QuickLinksConfigProps {
   onLinksChange: (links: QuickLink[]) => void;
 }
 
+// 规范化URL：自动添加https://前缀（如果需要）
+const normalizeUrl = (url: string): string => {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return trimmedUrl;
+
+  // 如果已经有协议前缀（http://, https://, file://, etc.），直接返回
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmedUrl)) {
+    return trimmedUrl;
+  }
+
+  // 检查是否看起来像一个域名（包含.且不含空格）
+  if (trimmedUrl.includes('.') && !trimmedUrl.includes(' ')) {
+    return `https://${trimmedUrl}`;
+  }
+
+  // 其他情况原样返回
+  return trimmedUrl;
+};
+
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "", icon: "" });
 
@@ -50,7 +69,8 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const addLink = () => {
     if (newLink.name && newLink.url) {
       const id = newLink.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-      onLinksChange([...links, { ...newLink, id, enabled: true }]);
+      const normalizedUrl = normalizeUrl(newLink.url);
+      onLinksChange([...links, { ...newLink, url: normalizedUrl, id, enabled: true }]);
       setNewLink({ name: "", url: "", icon: "" });
     }
   };
