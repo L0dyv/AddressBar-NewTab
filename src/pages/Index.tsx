@@ -12,6 +12,7 @@ import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
 import SettingsModal from "@/components/SettingsModal";
+import ImportExportSettings from "@/components/ImportExportSettings";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 
 interface QuickLink {
@@ -26,6 +27,7 @@ const Index = () => {
   const [query, setQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
 
   // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
@@ -164,6 +166,9 @@ const Index = () => {
             <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)}>
               快速链接设置
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowImportExport(true)}>
+              导入/导出设置
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -284,6 +289,15 @@ const Index = () => {
           links={quickLinks}
           onLinksChange={setQuickLinks}
         />
+      </SettingsModal>
+
+      {/* 导入/导出设置弹窗 */}
+      <SettingsModal
+        title="导入/导出设置"
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+      >
+        <ImportExportSettings />
       </SettingsModal>
     </div>
   );

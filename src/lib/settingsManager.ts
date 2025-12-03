@@ -1,0 +1,264 @@
+import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from './defaultSearchEngines';
+
+// 快速链接类型定义
+export interface QuickLink {
+    id: string;
+    name: string;
+    url: string;
+    icon?: string;
+    enabled?: boolean;
+}
+
+// 主题类型
+export type Theme = 'light' | 'dark' | 'system';
+
+// 导出的设置数据结构
+export interface ExportedSettings {
+    /** 配置版本号，用于后续兼容性处理 */
+    version: number;
+    /** 导出时间 */
+    exportedAt: string;
+    /** 搜索引擎配置 */
+    searchEngines: SearchEngine[];
+    /** 快速链接配置 */
+    quickLinks: QuickLink[];
+    /** 当前选中的搜索引擎 ID */
+    currentSearchEngine: string;
+    /** 已删除的内置搜索引擎 ID 列表 */
+    deletedBuiltinIds: string[];
+    /** 主题设置 */
+    theme: Theme;
+}
+
+// 当前配置版本
+const CURRENT_VERSION = 1;
+
+/**
+ * 从 localStorage 获取所有设置
+ */
+export function getAllSettings(): ExportedSettings {
+    const searchEngines = (() => {
+        try {
+            const saved = localStorage.getItem('searchEngines');
+            return saved ? JSON.parse(saved) : defaultSearchEngines;
+        } catch {
+            return defaultSearchEngines;
+        }
+    })();
+
+    const quickLinks = (() => {
+        try {
+            const saved = localStorage.getItem('quickLinks');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    })();
+
+    const currentSearchEngine = localStorage.getItem('currentSearchEngine') ?? 'google';
+
+    const deletedBuiltinIds = (() => {
+        try {
+            const saved = localStorage.getItem('deletedBuiltinIds');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    })();
+
+    const theme = (localStorage.getItem('theme') as Theme) ?? 'system';
+
+    return {
+        version: CURRENT_VERSION,
+        exportedAt: new Date().toISOString(),
+        searchEngines,
+        quickLinks,
+        currentSearchEngine,
+        deletedBuiltinIds,
+        theme,
+    };
+}
+
+/**
+ * 验证导入的设置数据
+ */
+export function validateSettings(data: unknown): { valid: boolean; error?: string } {
+    if (!data || typeof data !== 'object') {
+        return { valid: false, error: '无效的配置数据：不是有效的 JSON 对象' };
+    }
+
+    const settings = data as Partial<ExportedSettings>;
+
+    // 检查版本号
+    if (typeof settings.version !== 'number') {
+        return { valid: false, error: '无效的配置数据：缺少版本号' };
+    }
+
+    if (settings.version > CURRENT_VERSION) {
+        return { valid: false, error: `不支持的配置版本 ${settings.version}，当前支持版本 ${CURRENT_VERSION}` };
+    }
+
+    // 检查搜索引擎数组
+    if (!Array.isArray(settings.searchEngines)) {
+        return { valid: false, error: '无效的配置数据：searchEngines 必须是数组' };
+    }
+
+    for (const engine of settings.searchEngines) {
+        if (!engine.id || typeof engine.id !== 'string') {
+            return { valid: false, error: '无效的搜索引擎配置：缺少 id' };
+        }
+        if (!engine.name || typeof engine.name !== 'string') {
+            return { valid: false, error: '无效的搜索引擎配置：缺少 name' };
+        }
+        if (!engine.url || typeof engine.url !== 'string') {
+            return { valid: false, error: '无效的搜索引擎配置：缺少 url' };
+        }
+    }
+
+    // 检查快速链接数组
+    if (!Array.isArray(settings.quickLinks)) {
+        return { valid: false, error: '无效的配置数据：quickLinks 必须是数组' };
+    }
+
+    for (const link of settings.quickLinks) {
+        if (!link.id || typeof link.id !== 'string') {
+            return { valid: false, error: '无效的快速链接配置：缺少 id' };
+        }
+        if (!link.name || typeof link.name !== 'string') {
+            return { valid: false, error: '无效的快速链接配置：缺少 name' };
+        }
+        if (!link.url || typeof link.url !== 'string') {
+            return { valid: false, error: '无效的快速链接配置：缺少 url' };
+        }
+    }
+
+    // 检查当前搜索引擎
+    if (typeof settings.currentSearchEngine !== 'string') {
+        return { valid: false, error: '无效的配置数据：currentSearchEngine 必须是字符串' };
+    }
+
+    // 检查已删除的内置引擎列表
+    if (!Array.isArray(settings.deletedBuiltinIds)) {
+        return { valid: false, error: '无效的配置数据：deletedBuiltinIds 必须是数组' };
+    }
+
+    // 检查主题
+    if (!['light', 'dark', 'system'].includes(settings.theme as string)) {
+        return { valid: false, error: '无效的配置数据：theme 必须是 light、dark 或 system' };
+    }
+
+    return { valid: true };
+}
+
+/**
+ * 导入设置到 localStorage
+ */
+export function importSettings(data: ExportedSettings): void {
+    const validation = validateSettings(data);
+    if (!validation.valid) {
+        throw new Error(validation.error);
+    }
+
+    // 保存所有设置
+    localStorage.setItem('searchEngines', JSON.stringify(data.searchEngines));
+    localStorage.setItem('quickLinks', JSON.stringify(data.quickLinks));
+    localStorage.setItem('currentSearchEngine', data.currentSearchEngine);
+    localStorage.setItem('deletedBuiltinIds', JSON.stringify(data.deletedBuiltinIds));
+    localStorage.setItem('theme', data.theme);
+}
+
+/**
+ * 导出设置为 JSON 字符串
+ */
+export function exportSettingsToJson(): string {
+    const settings = getAllSettings();
+    return JSON.stringify(settings, null, 2);
+}
+
+/**
+ * 下载设置为 JSON 文件
+ */
+export function downloadSettings(): void {
+    const jsonString = exportSettingsToJson();
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quick-tab-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * 从 JSON 字符串导入设置
+ */
+export function importSettingsFromJson(jsonString: string): void {
+    try {
+        const data = JSON.parse(jsonString);
+        importSettings(data);
+    } catch (error) {
+        if (error instanceof SyntaxError) {
+            throw new Error('无效的 JSON 格式');
+        }
+        throw error;
+    }
+}
+
+/**
+ * 从文件导入设置
+ */
+export function importSettingsFromFile(file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (!file.name.endsWith('.json')) {
+            reject(new Error('请选择 JSON 格式的配置文件'));
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            try {
+                const content = event.target?.result as string;
+                importSettingsFromJson(content);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        reader.onerror = () => {
+            reject(new Error('读取文件失败'));
+        };
+
+        reader.readAsText(file, 'utf-8');
+    });
+}
+
+/**
+ * 重置所有设置为默认值
+ */
+export function resetAllSettings(): void {
+    localStorage.removeItem('searchEngines');
+    localStorage.removeItem('quickLinks');
+    localStorage.removeItem('currentSearchEngine');
+    localStorage.removeItem('deletedBuiltinIds');
+    localStorage.setItem('theme', 'system');
+}
+
+/**
+ * 创建设置备份（返回可用于恢复的数据）
+ */
+export function createBackup(): ExportedSettings {
+    return getAllSettings();
+}
+
+/**
+ * 从备份恢复设置
+ */
+export function restoreFromBackup(backup: ExportedSettings): void {
+    importSettings(backup);
+}
