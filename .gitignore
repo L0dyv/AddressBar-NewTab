@@ -20,7 +20,7 @@ dist/
 V0.dev Design Demo/
 
 # Chrome extension build artifacts
-dist.crx
+*.crx
 *.pem
 quick-tab-navigator.pem
 
