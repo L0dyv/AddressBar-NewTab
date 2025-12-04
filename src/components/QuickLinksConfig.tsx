@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, GripVertical, Loader2 } from "lucide-react";
+import { Trash2, Plus, GripVertical, Loader2, Pencil, Check, X } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -59,6 +59,9 @@ const normalizeUrl = (url: string): string => {
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingLink, setEditingLink] = useState({ name: "", url: "" });
+  const [isEditLoading, setIsEditLoading] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -133,6 +136,42 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
     onLinksChange(filteredLinks);
   };
 
+  const startEditing = (link: QuickLink) => {
+    setEditingId(link.id);
+    setEditingLink({ name: link.name, url: link.url });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingLink({ name: "", url: "" });
+  };
+
+  const saveEditing = async () => {
+    if (editingId && editingLink.url) {
+      setIsEditLoading(true);
+      try {
+        const normalizedUrl = normalizeUrl(editingLink.url);
+
+        // 如果没有填写名称，自动获取
+        let linkName = editingLink.name.trim();
+        if (!linkName) {
+          linkName = await fetchPageTitle(normalizedUrl);
+        }
+
+        const updatedLinks = links.map(link =>
+          link.id === editingId
+            ? { ...link, name: linkName, url: normalizedUrl }
+            : link
+        );
+        onLinksChange(updatedLinks);
+        setEditingId(null);
+        setEditingLink({ name: "", url: "" });
+      } finally {
+        setIsEditLoading(false);
+      }
+    }
+  };
+
   const resetToDefault = () => {
     onLinksChange([]);
   };
@@ -158,6 +197,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const DraggableRow = ({ link }: { link: QuickLink }) => {
     const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id: link.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
+    const isEditing = editingId === link.id;
 
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       e.stopPropagation();
@@ -168,6 +208,51 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
       e.stopPropagation();
       removeLink(link.id);
     };
+
+    const handleEditClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      startEditing(link);
+    };
+
+    if (isEditing) {
+      return (
+        <div ref={setNodeRef} style={style}
+          className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input
+              value={editingLink.name}
+              onChange={(e) => setEditingLink({ ...editingLink, name: e.target.value })}
+              placeholder="留空将自动获取"
+              disabled={isEditLoading}
+            />
+            <Input
+              value={editingLink.url}
+              onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
+              placeholder="https://example.com"
+              disabled={isEditLoading}
+              autoFocus
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={saveEditing}
+            disabled={!editingLink.url || isEditLoading}
+            className="text-green-600 hover:text-green-800"
+          >
+            {isEditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cancelEditing}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
 
     return (
       <div ref={setNodeRef} style={style}
@@ -182,6 +267,14 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
           <div className="font-medium">{link.name}</div>
           <div className="text-sm text-gray-500">{link.url}</div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleEditClick}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"
