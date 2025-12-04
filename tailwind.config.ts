@@ -62,10 +62,23 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				gray: {
-					900: '#0F0F10',   // Linear 深黑
-					800: '#18181A',   // 稍微浅一点，用于 hover 等
+				// Stone 色系扩展
+				stone: {
+					50: '#fafaf9',
+					100: '#f5f5f4',
+					200: '#e7e5e4',
+					300: '#d6d3d1',
+					400: '#a8a29e',
+					500: '#78716c',
+					600: '#57534e',
+					700: '#44403c',
+					800: '#292524',
+					900: '#1c1917',
+					950: '#0c0a09',
 				}
+			},
+			fontFamily: {
+				serif: ['"Noto Serif SC"', 'Georgia', '"Times New Roman"', 'serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

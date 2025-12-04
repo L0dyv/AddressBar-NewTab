@@ -6,95 +6,98 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ===== V0 Stone 色系（优雅中性色调）===== */
+    --background: 60 9% 98%;
+    /* stone-50 */
+    --foreground: 24 10% 10%;
+    /* stone-900 */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 24 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 24 10% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 24 10% 10%;
+    /* stone-900 */
+    --primary-foreground: 60 9% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 60 5% 96%;
+    /* stone-100 */
+    --secondary-foreground: 24 10% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 60 5% 96%;
+    --muted-foreground: 24 6% 45%;
+    /* stone-500 */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 60 5% 96%;
+    --accent-foreground: 24 10% 10%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 60 9% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 24 6% 83%;
+    /* stone-300 */
+    --input: 24 6% 83%;
+    --ring: 24 6% 70%;
+    /* stone-400 */
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 60 9% 98%;
+    --sidebar-foreground: 24 6% 45%;
+    --sidebar-primary: 24 10% 10%;
+    --sidebar-primary-foreground: 60 9% 98%;
+    --sidebar-accent: 60 5% 96%;
+    --sidebar-accent-foreground: 24 10% 10%;
+    --sidebar-border: 24 6% 83%;
+    --sidebar-ring: 24 6% 70%;
   }
 
   .dark {
-    /* ===== Linear 深色 v2（去除紫色高亮）===== */
+    /* ===== V0 Stone 深色（优雅深色模式）===== */
+    --background: 24 10% 4%;
+    /* stone-950 */
+    --foreground: 60 9% 98%;
+    /* stone-50 */
 
-    /* 基础底色 */
-    --background: 240 3% 6%;
-    /* #0F0F10 */
-    --foreground: 0 0% 97%;
-    /* #F7F7F7 */
+    --card: 24 10% 10%;
+    /* stone-900 */
+    --card-foreground: 60 9% 98%;
 
-    /* 表面 */
-    --card: 240 3% 8%;
-    --card-foreground: 0 0% 97%;
-    --popover: 240 3% 10%;
-    --popover-foreground: 0 0% 97%;
+    --popover: 24 6% 15%;
+    --popover-foreground: 60 9% 98%;
 
-    /* 文字主色 */
-    --primary: 0 0% 97%;
-    --primary-foreground: 240 3% 6%;
+    --primary: 60 9% 98%;
+    --primary-foreground: 24 10% 10%;
 
-    /* 次级表面 / Hover */
-    --secondary: 240 3% 12%;
-    --secondary-foreground: 0 0% 94%;
+    --secondary: 24 6% 15%;
+    --secondary-foreground: 60 9% 98%;
 
-    --muted: 240 3% 12%;
-    --muted-foreground: 240 2% 60%;
+    --muted: 24 6% 15%;
+    --muted-foreground: 24 6% 45%;
+    /* stone-500 */
 
-    /* 中性高亮（不使用紫色）*/
-    --accent: 240 3% 22%;
-    /* #353538 */
-    --accent-foreground: 0 0% 97%;
+    --accent: 24 6% 22%;
+    --accent-foreground: 60 9% 98%;
 
-    /* 危险色 */
     --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 60 9% 98%;
 
-    /* 边框 / 输入框 / Ring */
-    --border: 240 3% 16%;
-    --input: 240 3% 16%;
-    --ring: 240 3% 32%;
+    --border: 24 6% 20%;
+    /* stone-800 */
+    --input: 24 6% 20%;
+    --ring: 24 6% 35%;
+    /* stone-700 */
 
-    /* 侧边栏 */
-    --sidebar-background: 240 3% 6%;
-    --sidebar-foreground: 0 0% 94%;
-    --sidebar-primary: 240 3% 22%;
-    --sidebar-primary-foreground: 0 0% 97%;
-    --sidebar-accent: 240 3% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 3% 16%;
-    --sidebar-ring: 240 3% 22%;
+    --sidebar-background: 24 10% 10%;
+    --sidebar-foreground: 60 9% 98%;
+    --sidebar-primary: 24 6% 22%;
+    --sidebar-primary-foreground: 60 9% 98%;
+    --sidebar-accent: 24 6% 15%;
+    --sidebar-accent-foreground: 60 9% 98%;
+    --sidebar-border: 24 6% 20%;
+    --sidebar-ring: 24 6% 22%;
   }
 }
 
@@ -105,6 +108,9 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Serif SC', 'Georgia', 'Times New Roman', serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -124,17 +130,27 @@
     transition-duration: 150ms;
   }
 
-  /* 更精细的阴影 */
+  /* V0 风格搜索框特效 */
+  .search-input-v0 {
+    @apply w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full pl-11 pr-5 py-3.5 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-300 dark:focus:ring-stone-700 focus:border-transparent transition-all text-base;
+    font-family: 'Noto Serif SC', serif;
+  }
+
+  /* 更精细的阴影 - Stone 色系 */
   .shadow-sm {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 2px 0 rgba(120, 113, 108, 0.05);
   }
 
   .shadow-md {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 4px 6px -1px rgba(120, 113, 108, 0.08), 0 2px 4px -1px rgba(120, 113, 108, 0.04);
   }
 
   .shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 10px 15px -3px rgba(120, 113, 108, 0.08), 0 4px 6px -2px rgba(120, 113, 108, 0.04);
+  }
+
+  .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(120, 113, 108, 0.1), 0 10px 10px -5px rgba(120, 113, 108, 0.04);
   }
 
   /* 深色模式下的阴影调整 */
@@ -148,6 +164,10 @@
 
   .dark .shadow-lg {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
   }
 
   /* === Drag handle cursors ============================================== */
