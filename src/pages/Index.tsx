@@ -237,10 +237,12 @@ const Index = () => {
         {quickLinks.filter(l => l.enabled === true).length > 0 && (
           <div className="grid grid-cols-4 md:grid-cols-6 gap-4 md:gap-6 w-full">
             {quickLinks.filter(l => l.enabled === true).map((link) => (
-              <div
+              <a
                 key={link.id}
+                href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-center py-6 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
-                onClick={() => window.location.href = link.url}
                 title={link.name}
               >
                 {/* 图标容器 */}
@@ -258,7 +260,7 @@ const Index = () => {
                     }}
                   />
                 )}
-              </div>
+              </a>
             ))}
           </div>
         )}
