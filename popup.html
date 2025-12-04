@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick Tab Navigator</title>
+    <style>
+      body {
+        width: 400px;
+        height: 300px;
+        margin: 0;
+        padding: 20px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .search-container {
+        margin-bottom: 20px;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+      input:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+      .quick-links {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .quick-link {
+        padding: 10px;
+        background: #f3f4f6;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        text-align: center;
+        font-size: 14px;
+      }
+      .quick-link:hover {
+        background: #e5e7eb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="search-container">
+      <input type="text" placeholder="搜索或输入网址..." id="searchInput" />
+    </div>
+    <div class="quick-links">
+      <a href="#" class="quick-link" data-url="https://www.google.com">Google</a>
+      <a href="#" class="quick-link" data-url="https://github.com">GitHub</a>
+      <a href="#" class="quick-link" data-url="https://stackoverflow.com">Stack Overflow</a>
+      <a href="#" class="quick-link" data-url="https://www.youtube.com">YouTube</a>
+    </div>
+    
+    <script>
+      const searchInput = document.getElementById('searchInput');
+      const quickLinks = document.querySelectorAll('.quick-link');
+      
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const query = e.target.value;
+          if (query) {
+            const isUrl = query.includes('.') && !query.includes(' ');
+            const url = isUrl ? 
+              (query.startsWith('http') ? query : `https://${query}`) :
+              `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            
+            chrome.tabs.create({ url });
+            window.close();
+          }
+        }
+      });
+      
+      quickLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = e.target.dataset.url;
+          chrome.tabs.create({ url });
+          window.close();
+        });
+      });
+    </script>
+  </body>
+</html>

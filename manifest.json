@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Quick Tab Navigator",
+  "version": "1.0.0",
+  "description": "A smart browser start page with auto-completion based on browser history",
+  "permissions": [
+    "history",
+    "bookmarks",
+    "tabs",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "icons": {
+    "16": "favicon.ico",
+    "48": "favicon.ico",
+    "128": "favicon.ico"
+  }
+}
