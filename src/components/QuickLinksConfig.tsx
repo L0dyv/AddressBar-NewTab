@@ -57,7 +57,7 @@ const normalizeUrl = (url: string): string => {
 };
 
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
-  const [newLink, setNewLink] = useState({ name: "", url: "", icon: "" });
+  const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -71,7 +71,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
       const id = newLink.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
       const normalizedUrl = normalizeUrl(newLink.url);
       onLinksChange([...links, { ...newLink, url: normalizedUrl, id, enabled: true }]);
-      setNewLink({ name: "", url: "", icon: "" });
+      setNewLink({ name: "", url: "" });
     }
   };
 
@@ -126,10 +126,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
           checked={link.enabled === true}
           onChange={handleCheckboxChange} />
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            {link.icon && <span className="text-lg">{link.icon}</span>}
-            <div className="font-medium">{link.name}</div>
-          </div>
+          <div className="font-medium">{link.name}</div>
           <div className="text-sm text-gray-500">{link.url}</div>
         </div>
         <Button
@@ -173,14 +170,14 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
         {/* 添加新快速链接 */}
         <div className={links.length > 0 ? "border-t pt-6" : ""}>
           <h3 className="font-medium mb-4">添加新快速链接</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="linkName">名称</Label>
+              <Label htmlFor="linkName">名称(可选)</Label>
               <Input
                 id="linkName"
                 value={newLink.name}
                 onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-                placeholder="链接名称"
+                placeholder="留空将自动获取"
               />
             </div>
             <div>
@@ -190,15 +187,6 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
                 placeholder="https://example.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="linkIcon">图标 (可选)</Label>
-              <Input
-                id="linkIcon"
-                value={newLink.icon}
-                onChange={(e) => setNewLink({ ...newLink, icon: e.target.value })}
-                placeholder="😀"
               />
             </div>
             <div className="flex items-end">
