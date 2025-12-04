@@ -23,6 +23,7 @@ V0.dev Design Demo/
 *.crx
 *.pem
 quick-tab-navigator.pem
+CrxExtensionPack/
 
 # Logs
 *.log
