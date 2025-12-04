@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, X, GripVertical, RotateCcw } from "lucide-react";
+import { Trash2, Plus, GripVertical, Loader2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -58,6 +58,7 @@ const normalizeUrl = (url: string): string => {
 
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [newLink, setNewLink] = useState({ name: "", url: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -66,12 +67,64 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
     })
   );
 
-  const addLink = () => {
-    if (newLink.name && newLink.url) {
-      const id = newLink.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-      const normalizedUrl = normalizeUrl(newLink.url);
-      onLinksChange([...links, { ...newLink, url: normalizedUrl, id, enabled: true }]);
-      setNewLink({ name: "", url: "" });
+  // 通过 background.js 获取网页标题
+  const fetchPageTitle = async (url: string): Promise<string> => {
+    console.log('[QuickLinks] 开始获取标题:', url);
+    console.log('[QuickLinks] chrome 对象:', typeof chrome);
+    console.log('[QuickLinks] chrome.runtime:', typeof chrome !== 'undefined' ? chrome.runtime : 'undefined');
+
+    return new Promise((resolve) => {
+      // 检查是否在扩展环境中
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        console.log('[QuickLinks] 发送消息到 background...');
+        chrome.runtime.sendMessage<{ success: boolean; title?: string }>(
+          { type: 'FETCH_PAGE_TITLE', url },
+          (response) => {
+            console.log('[QuickLinks] 收到响应:', response);
+            if (response?.success && response.title) {
+              resolve(response.title);
+            } else {
+              // 失败时使用域名
+              try {
+                const urlObj = new URL(url);
+                resolve(urlObj.hostname.replace('www.', ''));
+              } catch {
+                resolve(url);
+              }
+            }
+          }
+        );
+      } else {
+        console.log('[QuickLinks] 不在扩展环境中，使用域名');
+        // 非扩展环境，使用域名
+        try {
+          const urlObj = new URL(url);
+          resolve(urlObj.hostname.replace('www.', ''));
+        } catch {
+          resolve(url);
+        }
+      }
+    });
+  };
+
+  const addLink = async () => {
+    if (newLink.url) {
+      setIsLoading(true);
+      try {
+        const normalizedUrl = normalizeUrl(newLink.url);
+
+        // 如果没有填写名称，自动获取
+        let linkName = newLink.name.trim();
+        if (!linkName) {
+          linkName = await fetchPageTitle(normalizedUrl);
+        }
+
+        const id = linkName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+        onLinksChange([...links, { name: linkName, url: normalizedUrl, id, enabled: true }]);
+        setNewLink({ name: "", url: "" });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -190,9 +243,13 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={addLink} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                添加
+              <Button onClick={addLink} className="w-full" disabled={isLoading || !newLink.url}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                {isLoading ? "获取中..." : "添加"}
               </Button>
             </div>
           </div>

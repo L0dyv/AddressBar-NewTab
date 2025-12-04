@@ -51,4 +51,11 @@ declare namespace chrome {
 
     function create(createProperties: { url: string }): Promise<Tab>;
   }
+
+  namespace runtime {
+    function sendMessage<T = unknown>(
+      message: unknown,
+      responseCallback?: (response: T) => void
+    ): void;
+  }
 }
