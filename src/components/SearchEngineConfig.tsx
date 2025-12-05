@@ -143,16 +143,6 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
     })
   );
 
-  // 使用扩展的内置引擎列表（包含更多选项）
-  const EXTRA_BUILTIN_ENGINES: SearchEngine[] = [
-    { id: 'kagi', name: 'Kagi', url: 'https://kagi.com/search?q=' },
-    { id: 'yahoo', name: 'Yahoo', url: 'https://search.yahoo.com/search?p=' },
-    { id: 'sogou', name: '搜狗', url: 'https://www.sogou.com/web?query=' },
-    { id: 'yandex', name: 'Yandex', url: 'https://yandex.com/search/?text=' },
-    { id: 'startpage', name: 'StartPage', url: 'https://www.startpage.com/do/search?q=' },
-    { id: 'ecosia', name: 'Ecosia', url: 'https://www.ecosia.org/search?q=' },
-  ];
-
   const addEngine = () => {
     if (newEngine.name && newEngine.url) {
       const id = newEngine.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();

@@ -28,6 +28,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
   const [showImportExport, setShowImportExport] = useState(false);
+  const [showShortcutHints, setShowShortcutHints] = useState(false);
 
   // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
@@ -165,6 +166,71 @@ const Index = () => {
     if (def && def.id !== searchEngine) setSearchEngine(def.id);
   }, [searchEngines]);
 
+  // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // 检查按下的是 1-9
+      const key = e.key;
+      if (!/^[1-9]$/.test(key)) return;
+
+      // 仅响应 Alt + 数字
+      if (!e.altKey) return;
+
+      const enabled = searchEngines.filter(s => s.enabled !== false);
+      if (enabled.length === 0) return;
+
+      const idx = Math.min(parseInt(key, 10) - 1, enabled.length - 1);
+      const target = enabled[idx];
+      if (target && target.id !== searchEngine) {
+        e.preventDefault();
+        setSearchEngine(target.id);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [searchEngines, searchEngine]);
+
+  // 按住 Alt 键 400ms 后显示快捷键提示
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Alt' && !timer) {
+        timer = setTimeout(() => setShowShortcutHints(true), 400);
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        setShowShortcutHints(false);
+      }
+    };
+
+    // 窗口失焦时也隐藏提示
+    const onBlur = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      setShowShortcutHints(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col items-center justify-center p-4 transition-colors">
       {/* 设置和主题切换按钮 */}
@@ -230,17 +296,23 @@ const Index = () => {
 
           {/* 搜索引擎选择 - V0 风格圆角标签 */}
           <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-            {searchEngines.filter(e => e.enabled !== false).map((engine) => (
+            {searchEngines.filter(e => e.enabled !== false).map((engine, index) => (
               <button
                 key={engine.id}
                 type="button"
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
+                className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
                   ? "bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 shadow-sm"
                   : "text-stone-600 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 hover:text-stone-800 dark:hover:text-stone-200 bg-transparent"
                   }`}
                 onClick={() => handleSearchEngineChange(engine.id)}
                 onMouseDown={(e) => e.preventDefault()}
               >
+                {/* 快捷键数字提示 */}
+                {showShortcutHints && index < 9 && (
+                  <span className="absolute -top-2 -right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-stone-600 dark:bg-stone-400 text-white dark:text-stone-900 shadow-sm animate-in fade-in zoom-in-50 duration-150">
+                    {index + 1}
+                  </span>
+                )}
                 {engine.name}
                 {engine.isAI && (
                   <span className="ml-1 text-xs bg-stone-600 dark:bg-stone-700 text-white dark:text-stone-300 px-1.5 py-0.5 rounded">AI</span>

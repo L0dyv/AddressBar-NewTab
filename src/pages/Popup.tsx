@@ -17,6 +17,7 @@ export default function Popup() {
     const [query, setQuery] = useState("");
     const { theme } = useTheme();
     const [showQuickLinks, setShowQuickLinks] = useState(false);
+    const [showShortcutHints, setShowShortcutHints] = useState(false);
 
     // 从 localStorage 加载搜索引擎配置（与主页共享），使用方案B自动补齐
     const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
@@ -150,6 +151,68 @@ export default function Popup() {
         }
     }, [theme]);
 
+    // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const key = e.key;
+            if (!/^[1-9]$/.test(key)) return;
+            // 仅响应 Alt + 数字
+            if (!e.altKey) return;
+
+            const enabled = searchEngines.filter(s => s.enabled !== false);
+            if (enabled.length === 0) return;
+
+            const idx = Math.min(parseInt(key, 10) - 1, enabled.length - 1);
+            const target = enabled[idx];
+            if (target && target.id !== searchEngine) {
+                e.preventDefault();
+                handleSearchEngineChange(target.id);
+            }
+        };
+
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [searchEngines, searchEngine]);
+
+    // 按住 Alt 键 400ms 后显示快捷键提示
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Alt' && !timer) {
+                timer = setTimeout(() => setShowShortcutHints(true), 400);
+            }
+        };
+
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Alt') {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+                setShowShortcutHints(false);
+            }
+        };
+
+        const onBlur = () => {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            setShowShortcutHints(false);
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
+            if (timer) clearTimeout(timer);
+        };
+    }, []);
+
     // 动态计算高度
     const popupHeight = showQuickLinks ? "280px" : "200px";
 
@@ -194,17 +257,23 @@ export default function Popup() {
 
                     {/* 搜索引擎选择 - V0 风格紧凑布局 */}
                     <div className="flex items-center justify-center gap-1.5 flex-wrap mb-3">
-                        {searchEngines.filter(e => e.enabled !== false).map((engine) => (
+                        {searchEngines.filter(e => e.enabled !== false).map((engine, index) => (
                             <button
                                 key={engine.id}
                                 type="button"
-                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
+                                className={`relative inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${searchEngine === engine.id
                                     ? "bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 shadow-sm"
                                     : "text-stone-600 dark:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 hover:text-stone-800 dark:hover:text-stone-200 bg-transparent"
                                     }`}
                                 onClick={() => handleSearchEngineChange(engine.id)}
                                 onMouseDown={(e) => e.preventDefault()}
                             >
+                                {/* 快捷键数字提示 */}
+                                {showShortcutHints && index < 9 && (
+                                    <span className="absolute -top-1.5 -right-0.5 flex items-center justify-center w-3.5 h-3.5 text-[9px] font-bold rounded-full bg-stone-600 dark:bg-stone-400 text-white dark:text-stone-900 shadow-sm animate-in fade-in zoom-in-50 duration-150">
+                                        {index + 1}
+                                    </span>
+                                )}
                                 {engine.name}
                                 {engine.isAI && (
                                     <span className="ml-0.5 text-[10px] bg-stone-600 dark:bg-stone-700 text-white dark:text-stone-300 px-1 py-0.5 rounded">AI</span>
