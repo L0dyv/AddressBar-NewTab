@@ -1,3 +1,6 @@
+# Todo
+TODO/
+
 # Dependencies
 node_modules/
 
@@ -48,7 +51,7 @@ Thumbs.db
 # TypeScript cache
 *.tsbuildinfo
 
-# Optional: lock files (uncomment if you prefer)
+# Optional: lock files
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
