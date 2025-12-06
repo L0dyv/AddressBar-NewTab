@@ -14,6 +14,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import SettingsModal from "@/components/SettingsModal";
 import ImportExportSettings from "@/components/ImportExportSettings";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
+import { getStoredValue, setStoredValue, migrateLocalStorageToSync } from "@/lib/storage";
+import QuickLinkIcon from "@/components/QuickLinkIcon";
 
 interface QuickLink {
   id: string;
@@ -34,15 +36,11 @@ const Index = () => {
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
     try {
       const saved = localStorage.getItem('searchEngines');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // 方案B：自动补齐所有内置引擎
-        return mergeBuiltinEngines(parsed);
-      }
-      return defaultSearchEngines;
+      if (saved) return mergeBuiltinEngines(JSON.parse(saved));
     } catch {
-      return defaultSearchEngines;
+      /* ignore */
     }
+    return defaultSearchEngines;
   });
 
   // 从 localStorage 加载快速链接配置
@@ -50,47 +48,83 @@ const Index = () => {
     try {
       const saved = localStorage.getItem('quickLinks');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        // 确保所有链接都有 enabled 字段，默认为 true
-        return parsed.map((link: QuickLink) => ({
+        return JSON.parse(saved).map((link: QuickLink) => ({
           ...link,
-          enabled: link.enabled !== undefined ? link.enabled : true
+          enabled: link.enabled !== false,
         }));
       }
-      return [];
     } catch {
-      return [];
+      /* ignore */
     }
+    return [];
   });
 
   // 从 localStorage 加载当前选中的搜索引擎
   const [searchEngine, setSearchEngine] = useState(() => {
     try {
       const saved = localStorage.getItem('currentSearchEngine');
-      if (saved) {
-        return saved;
-      }
-      const defaultEngine = searchEngines.find(e => e.isDefault);
-      return defaultEngine ? defaultEngine.id : "google";
+      if (saved) return saved;
     } catch {
-      const defaultEngine = searchEngines.find(e => e.isDefault);
-      return defaultEngine ? defaultEngine.id : "google";
+      /* ignore */
     }
+    const def = defaultSearchEngines.find(e => e.isDefault);
+    return def ? def.id : "google";
   });
+
+  // 首次加载：迁移并从 chrome.storage.sync 取值
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      await migrateLocalStorageToSync([
+        'searchEngines',
+        'quickLinks',
+        'currentSearchEngine',
+        'deletedBuiltinIds',
+        'theme',
+      ]);
+
+      const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
+        getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
+        getStoredValue<QuickLink[]>('quickLinks', []),
+        getStoredValue<string>('currentSearchEngine', searchEngine),
+      ]);
+
+      if (!mounted) return;
+
+      const mergedEngines = mergeBuiltinEngines(storedEngines);
+      setSearchEngines(mergedEngines);
+
+      const normalizedLinks = storedLinks.map((link) => ({
+        ...link,
+        enabled: link.enabled !== undefined ? link.enabled : true,
+      }));
+      setQuickLinks(normalizedLinks);
+
+      if (storedEngineId) {
+        setSearchEngine(storedEngineId);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // 保存搜索引擎配置到 localStorage
   useEffect(() => {
-    localStorage.setItem('searchEngines', JSON.stringify(searchEngines));
+    setStoredValue('searchEngines', searchEngines);
   }, [searchEngines]);
 
   // 保存快速链接配置到 localStorage
   useEffect(() => {
-    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+    setStoredValue('quickLinks', quickLinks);
   }, [quickLinks]);
 
   // 保存当前选中的搜索引擎到 localStorage
   useEffect(() => {
-    localStorage.setItem('currentSearchEngine', searchEngine);
+    setStoredValue('currentSearchEngine', searchEngine);
   }, [searchEngine]);
 
   // 判断是否为URL
@@ -329,24 +363,17 @@ const Index = () => {
               <a
                 key={link.id}
                 href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                className="flex items-center justify-center py-6 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
+                className="flex items-center justify-center py-4 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
                 title={link.name}
               >
-                {/* 图标容器 */}
-                {link.icon ? (
-                  <div className="text-3xl group-hover:scale-110 transition-transform duration-200">
-                    {link.icon}
-                  </div>
-                ) : (
-                  <img
-                    src={`https://icons.duckduckgo.com/ip3/${(() => { try { return new URL(link.url).hostname; } catch { return link.url; } })()}.ico`}
-                    alt={link.name}
-                    className="w-10 h-10 object-contain group-hover:scale-110 transition-transform duration-200"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=64`;
-                    }}
+                <div className="group-hover:scale-110 transition-transform duration-200">
+                  <QuickLinkIcon
+                    name={link.name}
+                    url={link.url}
+                    icon={link.icon}
+                    size={32}
                   />
-                )}
+                </div>
               </a>
             ))}
           </div>

@@ -82,6 +82,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                 window.location.reload();
             }, 1500);
         } catch (err) {
+            console.error('Import settings failed', err);
             setError(err instanceof Error ? err.message : '导入失败');
         } finally {
             setImporting(false);

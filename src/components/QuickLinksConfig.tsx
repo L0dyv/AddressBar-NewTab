@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus, GripVertical, Loader2, Pencil, Check, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DndContext,
   closestCenter,
@@ -62,6 +73,8 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLink, setEditingLink] = useState({ name: "", url: "" });
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -108,6 +121,24 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
         }
       }
     });
+  };
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('skipConfirmDeleteQuickLinks');
+      setSkipDeleteConfirm(saved === 'true');
+    } catch {
+      setSkipDeleteConfirm(false);
+    }
+  }, []);
+
+  const updateSkipConfirm = (next: boolean) => {
+    setSkipDeleteConfirm(next);
+    try {
+      localStorage.setItem('skipConfirmDeleteQuickLinks', String(next));
+    } catch {
+      /* ignore */
+    }
   };
 
   const addLink = async () => {
@@ -206,7 +237,11 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
 
     const handleRemoveClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      removeLink(link.id);
+      if (skipDeleteConfirm) {
+        removeLink(link.id);
+      } else {
+        setConfirmDeleteId(link.id);
+      }
     };
 
     const handleEditClick = (e: React.MouseEvent) => {
@@ -224,13 +259,13 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
               onChange={(e) => setEditingLink({ ...editingLink, name: e.target.value })}
               placeholder="留空将自动获取"
               disabled={isEditLoading}
+              autoFocus
             />
             <Input
               value={editingLink.url}
               onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
               placeholder="https://example.com"
               disabled={isEditLoading}
-              autoFocus
             />
           </div>
           <Button
@@ -333,6 +368,12 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
                 placeholder="https://example.com"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addLink();
+                  }
+                }}
               />
             </div>
             <div className="flex items-end">
@@ -353,6 +394,39 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
           )}
         </div>
       </CardContent>
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除这个快速链接？</AlertDialogTitle>
+            <AlertDialogDescription>
+              删除后无法恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="skipConfirmLinks"
+              checked={skipDeleteConfirm}
+              onCheckedChange={(val) => updateSkipConfirm(Boolean(val))}
+            />
+            <Label htmlFor="skipConfirmLinks" className="text-sm">下次不再提示</Label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteId) {
+                  removeLink(confirmDeleteId);
+                }
+                setConfirmDeleteId(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

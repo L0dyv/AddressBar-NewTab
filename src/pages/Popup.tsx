@@ -4,6 +4,8 @@ import AutoComplete from "@/components/AutoComplete";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
+import { getStoredValue, migrateLocalStorageToSync, setStoredValue } from "@/lib/storage";
+import QuickLinkIcon from "@/components/QuickLinkIcon";
 
 interface QuickLink {
     id: string;
@@ -19,49 +21,80 @@ export default function Popup() {
     const [showQuickLinks, setShowQuickLinks] = useState(false);
     const [showShortcutHints, setShowShortcutHints] = useState(false);
 
-    // 从 localStorage 加载搜索引擎配置（与主页共享），使用方案B自动补齐
     const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
         try {
             const saved = localStorage.getItem('searchEngines');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                // 方案B：自动补齐所有内置引擎
-                return mergeBuiltinEngines(parsed);
-            }
-            return defaultSearchEngines;
+            if (saved) return mergeBuiltinEngines(JSON.parse(saved));
         } catch {
-            return defaultSearchEngines;
+            /* ignore */
         }
+        return defaultSearchEngines;
     });
 
-    // 从 localStorage 加载快速链接
     const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() => {
         try {
             const saved = localStorage.getItem('quickLinks');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                return parsed.filter((link: QuickLink) => link.enabled !== false);
+                return JSON.parse(saved)
+                    .map((link: QuickLink) => ({ ...link, enabled: link.enabled !== false }))
+                    .filter((link: QuickLink) => link.enabled);
             }
-            return [];
         } catch {
-            return [];
+            /* ignore */
         }
+        return [];
     });
 
-    // 从 localStorage 加载当前选中的搜索引擎
     const [searchEngine, setSearchEngine] = useState(() => {
         try {
             const saved = localStorage.getItem('currentSearchEngine');
-            if (saved) {
-                return saved;
-            }
-            const defaultEngine = searchEngines.find(e => e.isDefault);
-            return defaultEngine ? defaultEngine.id : "google";
+            if (saved) return saved;
         } catch {
-            const defaultEngine = searchEngines.find(e => e.isDefault);
-            return defaultEngine ? defaultEngine.id : "google";
+            /* ignore */
         }
+        const def = defaultSearchEngines.find(e => e.isDefault);
+        return def ? def.id : "google";
     });
+
+    // 首次加载：迁移并从 chrome.storage.sync 取值
+    useEffect(() => {
+        let mounted = true;
+
+        const load = async () => {
+            await migrateLocalStorageToSync([
+                'searchEngines',
+                'quickLinks',
+                'currentSearchEngine',
+                'deletedBuiltinIds',
+                'theme',
+            ]);
+
+            const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
+                getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
+                getStoredValue<QuickLink[]>('quickLinks', []),
+                getStoredValue<string>('currentSearchEngine', searchEngine),
+            ]);
+
+            if (!mounted) return;
+
+            const mergedEngines = mergeBuiltinEngines(storedEngines);
+            setSearchEngines(mergedEngines);
+
+            const normalizedLinks = storedLinks
+                .map((link) => ({ ...link, enabled: link.enabled !== false }))
+                .filter((link) => link.enabled);
+            setQuickLinks(normalizedLinks);
+
+            if (storedEngineId) {
+                setSearchEngine(storedEngineId);
+            }
+        };
+
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // 根据快速链接数量决定是否显示
     useEffect(() => {
@@ -81,7 +114,7 @@ export default function Popup() {
     // 保存当前选中的搜索引擎
     const handleSearchEngineChange = (engineId: string) => {
         setSearchEngine(engineId);
-        localStorage.setItem('currentSearchEngine', engineId);
+        setStoredValue('currentSearchEngine', engineId);
     };
 
     // 判断是否为URL
@@ -286,18 +319,9 @@ export default function Popup() {
                                     onClick={() => handleQuickLinkClick(link.url)}
                                     title={link.name}
                                 >
-                                    {link.icon ? (
-                                        <div className="text-2xl group-hover:scale-110 transition-transform duration-200">{link.icon}</div>
-                                    ) : (
-                                        <img
-                                            src={`https://icons.duckduckgo.com/ip3/${(() => { try { return new URL(link.url).hostname; } catch { return link.url; } })()}.ico`}
-                                            alt={link.name}
-                                            className="w-8 h-8 object-contain group-hover:scale-110 transition-transform duration-200"
-                                            onError={(e) => {
-                                                e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32`;
-                                            }}
-                                        />
-                                    )}
+                                    <div className="group-hover:scale-110 transition-transform duration-200">
+                                        <QuickLinkIcon name={link.name} url={link.url} icon={link.icon} size={28} />
+                                    </div>
                                 </div>
                             ))}
                         </div>

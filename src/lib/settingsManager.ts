@@ -1,4 +1,5 @@
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from './defaultSearchEngines';
+import { setStoredValue } from './storage';
 
 // 快速链接类型定义
 export interface QuickLink {
@@ -153,18 +154,40 @@ export function validateSettings(data: unknown): { valid: boolean; error?: strin
 /**
  * 导入设置到 localStorage
  */
-export function importSettings(data: ExportedSettings): void {
+export async function importSettings(data: ExportedSettings): Promise<void> {
     const validation = validateSettings(data);
     if (!validation.valid) {
         throw new Error(validation.error);
     }
 
-    // 保存所有设置
-    localStorage.setItem('searchEngines', JSON.stringify(data.searchEngines));
-    localStorage.setItem('quickLinks', JSON.stringify(data.quickLinks));
-    localStorage.setItem('currentSearchEngine', data.currentSearchEngine);
+    // 补齐内置搜索引擎并保证默认引擎存在
+    const mergedEngines = mergeBuiltinEngines(data.searchEngines);
+    const defaultEngine = mergedEngines.find(e => e.isDefault) ?? mergedEngines[0] ?? { id: 'google' } as SearchEngine;
+    const currentEngineId = mergedEngines.some(e => e.id === data.currentSearchEngine)
+        ? data.currentSearchEngine
+        : defaultEngine.id;
+
+    // 归一化快速链接 enabled 字段
+    const normalizedQuickLinks = data.quickLinks.map(link => ({
+        ...link,
+        enabled: link.enabled !== false,
+    }));
+
+    // 保存所有设置到 localStorage
+    localStorage.setItem('searchEngines', JSON.stringify(mergedEngines));
+    localStorage.setItem('quickLinks', JSON.stringify(normalizedQuickLinks));
+    localStorage.setItem('currentSearchEngine', currentEngineId);
     localStorage.setItem('deletedBuiltinIds', JSON.stringify(data.deletedBuiltinIds));
     localStorage.setItem('theme', data.theme);
+
+    // 同步写入 chrome.storage.sync（忽略失败，保持本地可用）
+    await Promise.allSettled([
+        setStoredValue('searchEngines', mergedEngines),
+        setStoredValue('quickLinks', normalizedQuickLinks),
+        setStoredValue('currentSearchEngine', currentEngineId),
+        setStoredValue('deletedBuiltinIds', data.deletedBuiltinIds),
+        setStoredValue('theme', data.theme),
+    ]);
 }
 
 /**
@@ -196,10 +219,10 @@ export function downloadSettings(): void {
 /**
  * 从 JSON 字符串导入设置
  */
-export function importSettingsFromJson(jsonString: string): void {
+export async function importSettingsFromJson(jsonString: string): Promise<void> {
     try {
         const data = JSON.parse(jsonString);
-        importSettings(data);
+        await importSettings(data);
     } catch (error) {
         if (error instanceof SyntaxError) {
             throw new Error('无效的 JSON 格式');
@@ -223,8 +246,9 @@ export function importSettingsFromFile(file: File): Promise<void> {
         reader.onload = (event) => {
             try {
                 const content = event.target?.result as string;
-                importSettingsFromJson(content);
-                resolve();
+                importSettingsFromJson(content)
+                    .then(() => resolve())
+                    .catch(reject);
             } catch (error) {
                 reject(error);
             }

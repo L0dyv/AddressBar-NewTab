@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus, X, Bot, GripVertical, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DndContext,
   closestCenter,
@@ -42,11 +53,12 @@ interface SearchEngineConfigProps {
 interface SortableEngineItemProps {
   engine: SearchEngine;
   onSetDefault: (id: string) => void;
-  onRemove: (id: string) => void;
   onToggleEnabled: (id: string, enabled: boolean) => void;
+  skipDeleteConfirm: boolean;
+  onRequestDelete: (id: string) => void;
 }
 
-function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }: SortableEngineItemProps) {
+function SortableEngineItem({ engine, onSetDefault, onToggleEnabled, skipDeleteConfirm, onRequestDelete }: SortableEngineItemProps) {
   const {
     attributes,
     listeners,
@@ -110,7 +122,13 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onRemove(engine.id)}
+            onClick={() => {
+              if (skipDeleteConfirm) {
+                onRequestDelete(engine.id);
+              } else {
+                onRequestDelete(engine.id);
+              }
+            }}
             className="text-red-600 hover:text-red-800"
           >
             <Trash2 className="h-4 w-4" />
@@ -131,6 +149,26 @@ function SortableEngineItem({ engine, onSetDefault, onRemove, onToggleEnabled }:
 
 const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProps) => {
   const [newEngine, setNewEngine] = useState({ name: "", url: "" });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('skipConfirmDeleteSearchEngines');
+      setSkipDeleteConfirm(saved === 'true');
+    } catch {
+      setSkipDeleteConfirm(false);
+    }
+  }, []);
+
+  const updateSkipConfirm = (next: boolean) => {
+    setSkipDeleteConfirm(next);
+    try {
+      localStorage.setItem('skipConfirmDeleteSearchEngines', String(next));
+    } catch {
+      /* ignore */
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -245,8 +283,15 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
                   key={engine.id}
                   engine={engine}
                   onSetDefault={setDefault}
-                  onRemove={removeEngine}
                   onToggleEnabled={toggleEnabled}
+                  skipDeleteConfirm={skipDeleteConfirm}
+                  onRequestDelete={(id) => {
+                    if (skipDeleteConfirm) {
+                      removeEngine(id);
+                    } else {
+                      setConfirmDeleteId(id);
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -299,6 +344,39 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
           </div>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除这个搜索引擎？</AlertDialogTitle>
+            <AlertDialogDescription>
+              删除后无法恢复；默认搜索引擎与 Kagi Assistant 不能删除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="skipConfirmEngines"
+              checked={skipDeleteConfirm}
+              onCheckedChange={(val) => updateSkipConfirm(Boolean(val))}
+            />
+            <Label htmlFor="skipConfirmEngines" className="text-sm">下次不再提示</Label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteId) {
+                  removeEngine(confirmDeleteId);
+                }
+                setConfirmDeleteId(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
