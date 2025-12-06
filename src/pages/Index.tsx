@@ -329,8 +329,6 @@ const Index = () => {
               <a
                 key={link.id}
                 href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="flex items-center justify-center py-6 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
                 title={link.name}
               >

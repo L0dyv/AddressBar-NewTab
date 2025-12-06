@@ -68,6 +68,16 @@ export default function Popup() {
         setShowQuickLinks(quickLinks.length > 0 && quickLinks.length <= 4);
     }, [quickLinks]);
 
+    // 在当前标签页导航，避免再创建新标签
+    const navigateInCurrentTab = (url: string) => {
+        if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
+            (window as any).chrome.tabs.update({ url });
+            window.close();
+        } else {
+            window.location.href = url;
+        }
+    };
+
     // 保存当前选中的搜索引擎
     const handleSearchEngineChange = (engineId: string) => {
         setSearchEngine(engineId);
@@ -91,11 +101,7 @@ export default function Popup() {
             internet: 'true'
         });
         const url = `https://kagi.com/assistant?${params.toString()}`;
-
-        if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-            (window as any).chrome.tabs.create({ url });
-            window.close();
-        }
+        navigateInCurrentTab(url);
     };
 
     // 处理搜索提交
@@ -104,10 +110,7 @@ export default function Popup() {
 
         if (isURL(value)) {
             const url = value.startsWith('http') ? value : `https://${value}`;
-            if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-                (window as any).chrome.tabs.create({ url });
-                window.close();
-            }
+            navigateInCurrentTab(url);
         } else {
             const engine = searchEngines.find(e => e.id === searchEngine);
             if (engine) {
@@ -115,10 +118,7 @@ export default function Popup() {
                     handleKagiSearch(value);
                 } else {
                     const searchUrl = engine.url + encodeURIComponent(value);
-                    if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-                        (window as any).chrome.tabs.create({ url: searchUrl });
-                        window.close();
-                    }
+                    navigateInCurrentTab(searchUrl);
                 }
             }
         }
@@ -126,18 +126,12 @@ export default function Popup() {
 
     // 打开快速链接
     const handleQuickLinkClick = (url: string) => {
-        if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-            (window as any).chrome.tabs.create({ url });
-            window.close();
-        }
+        navigateInCurrentTab(url);
     };
 
-    // 打开设置（新标签页）
+    // 打开设置（当前标签页）
     const handleOpenSettings = () => {
-        if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-            (window as any).chrome.tabs.create({ url: "chrome://newtab" });
-            window.close();
-        }
+        navigateInCurrentTab("chrome://newtab");
     };
 
     const isKagiSelected = searchEngine === 'kagi-assistant';
