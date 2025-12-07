@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useCallback } from "react";
 import * as React from "react";
 import {
     Dialog,
@@ -62,11 +62,11 @@ export default function SettingsModal({
     dirty = false,
 }: SettingsModalProps) {
     // 关闭时拦截：有脏数据就二次确认
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         if (!dirty || window.confirm("仍有未保存修改，确定关闭？")) {
             onOpenChange(false);
         }
-    };
+    }, [dirty, onOpenChange]);
 
     // 监听 ESC
     useEffect(() => {
@@ -75,7 +75,7 @@ export default function SettingsModal({
         };
         if (open) window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [open]);
+    }, [open, handleClose]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

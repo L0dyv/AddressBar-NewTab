@@ -84,10 +84,11 @@ const Index = () => {
         'theme',
       ]);
 
+      const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
       const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
         getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
         getStoredValue<QuickLink[]>('quickLinks', []),
-        getStoredValue<string>('currentSearchEngine', searchEngine),
+        getStoredValue<string>('currentSearchEngine', fallbackEngineId),
       ]);
 
       if (!mounted) return;
@@ -114,10 +115,11 @@ const Index = () => {
 
   useEffect(() => {
     const rehydrate = async () => {
+      const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
       const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
         getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
         getStoredValue<QuickLink[]>('quickLinks', []),
-        getStoredValue<string>('currentSearchEngine', searchEngine),
+        getStoredValue<string>('currentSearchEngine', fallbackEngineId),
       ]);
 
       const mergedEngines = mergeBuiltinEngines(storedEngines);
@@ -224,7 +226,8 @@ const Index = () => {
 
   useEffect(() => {
     const def = searchEngines.find(e => e.isDefault);
-    if (def && def.id !== searchEngine) setSearchEngine(def.id);
+    if (!def) return;
+    setSearchEngine((prev) => (def.id !== prev ? def.id : prev));
   }, [searchEngines]);
 
   // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎

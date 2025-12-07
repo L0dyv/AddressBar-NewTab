@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Settings, Search } from "lucide-react";
 import AutoComplete from "@/components/AutoComplete";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, migrateLocalStorageToSync, setStoredValue } from "@/lib/storage";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
@@ -69,10 +69,11 @@ export default function Popup() {
                 'theme',
             ]);
 
+            const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
             const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
                 getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
                 getStoredValue<QuickLink[]>('quickLinks', []),
-                getStoredValue<string>('currentSearchEngine', searchEngine),
+                getStoredValue<string>('currentSearchEngine', fallbackEngineId),
             ]);
 
             if (!mounted) return;
@@ -98,10 +99,11 @@ export default function Popup() {
 
     useEffect(() => {
         const rehydrate = async () => {
+            const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
             const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
                 getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
                 getStoredValue<QuickLink[]>('quickLinks', []),
-                getStoredValue<string>('currentSearchEngine', searchEngine),
+                getStoredValue<string>('currentSearchEngine', fallbackEngineId),
             ]);
 
             const mergedEngines = mergeBuiltinEngines(storedEngines);
