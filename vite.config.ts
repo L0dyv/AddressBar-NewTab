@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
@@ -16,7 +17,16 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     viteStaticCopy({
       targets: [
-        { src: 'manifest.json', dest: '.' },
+        {
+          src: 'manifest.json',
+          dest: '.',
+          transform: (content) => {
+            const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+            const manifest = JSON.parse(content.toString());
+            manifest.version = pkg.version;
+            return JSON.stringify(manifest, null, 2);
+          }
+        },
         { src: 'public/favicon.ico', dest: '.' }
       ]
     })
