@@ -11,6 +11,7 @@ dist/
 .idea/
 .vscode/
 *.code-workspace
+.trae/
 
 # Cursor AI
 .cursorindexingignore
