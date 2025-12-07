@@ -188,6 +188,12 @@ export async function importSettings(data: ExportedSettings): Promise<void> {
         setStoredValue('deletedBuiltinIds', data.deletedBuiltinIds),
         setStoredValue('theme', data.theme),
     ]);
+
+    try {
+        window.dispatchEvent(new CustomEvent('settings:updated'));
+    } catch {
+        void 0;
+    }
 }
 
 /**

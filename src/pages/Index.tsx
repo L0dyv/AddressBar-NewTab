@@ -112,6 +112,33 @@ const Index = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const rehydrate = async () => {
+      const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
+        getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
+        getStoredValue<QuickLink[]>('quickLinks', []),
+        getStoredValue<string>('currentSearchEngine', searchEngine),
+      ]);
+
+      const mergedEngines = mergeBuiltinEngines(storedEngines);
+      setSearchEngines(mergedEngines);
+
+      const normalizedLinks = storedLinks.map((link) => ({
+        ...link,
+        enabled: link.enabled !== undefined ? link.enabled : true,
+      }));
+      setQuickLinks(normalizedLinks);
+
+      if (storedEngineId) {
+        setSearchEngine(storedEngineId);
+      }
+    };
+
+    const handler = () => { rehydrate(); };
+    window.addEventListener('settings:updated', handler);
+    return () => window.removeEventListener('settings:updated', handler);
+  }, []);
+
   // 保存搜索引擎配置到 localStorage
   useEffect(() => {
     setStoredValue('searchEngines', searchEngines);

@@ -1,11 +1,18 @@
 // Lightweight wrapper for storage with chrome.storage.sync + localStorage fallback.
 // Mirrors writes to both so localStorage remains a fast cache for synchronous callers.
 
-// 尝试获取 chrome.storage.sync，使用 any 以绕过类型缺失场景
-const getChromeSync = () => {
+type ChromeStorageSync = {
+    get: (keys: string | string[]) => Promise<Record<string, unknown>>;
+    set: (items: Record<string, unknown>) => Promise<void>;
+    remove: (keys: string | string[]) => Promise<void>;
+};
+
+const getChromeSync = (): ChromeStorageSync | undefined => {
     try {
-        const sync = (typeof chrome !== 'undefined' ? (chrome as any)?.storage?.sync : undefined);
-        return sync as any;
+        const sync = (typeof chrome !== 'undefined'
+            ? (chrome as unknown as { storage?: { sync?: ChromeStorageSync } })?.storage?.sync
+            : undefined);
+        return sync;
     } catch {
         return undefined;
     }

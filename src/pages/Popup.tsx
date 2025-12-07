@@ -96,6 +96,32 @@ export default function Popup() {
         };
     }, []);
 
+    useEffect(() => {
+        const rehydrate = async () => {
+            const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
+                getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
+                getStoredValue<QuickLink[]>('quickLinks', []),
+                getStoredValue<string>('currentSearchEngine', searchEngine),
+            ]);
+
+            const mergedEngines = mergeBuiltinEngines(storedEngines);
+            setSearchEngines(mergedEngines);
+
+            const normalizedLinks = storedLinks
+                .map((link) => ({ ...link, enabled: link.enabled !== false }))
+                .filter((link) => link.enabled);
+            setQuickLinks(normalizedLinks);
+
+            if (storedEngineId) {
+                setSearchEngine(storedEngineId);
+            }
+        };
+
+        const handler = () => { rehydrate(); };
+        window.addEventListener('settings:updated', handler);
+        return () => window.removeEventListener('settings:updated', handler);
+    }, []);
+
     // 根据快速链接数量决定是否显示
     useEffect(() => {
         setShowQuickLinks(quickLinks.length > 0 && quickLinks.length <= 4);
@@ -103,8 +129,9 @@ export default function Popup() {
 
     // 在当前标签页导航，避免再创建新标签
     const navigateInCurrentTab = (url: string) => {
-        if (typeof window !== "undefined" && (window as any).chrome?.tabs) {
-            (window as any).chrome.tabs.update({ url });
+        const w = window as unknown as { chrome?: { tabs?: { update: (args: { url: string }) => void } } };
+        if (typeof window !== "undefined" && w.chrome?.tabs) {
+            w.chrome.tabs.update({ url });
             window.close();
         } else {
             window.location.href = url;

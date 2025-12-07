@@ -247,13 +247,14 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         setSelectedIndex(-1);
         break;
       case 'Tab':
-      case 'ArrowRight':
+      case 'ArrowRight': {
         const input = inputRef.current;
         if (input && input.selectionStart !== input.selectionEnd) {
           e.preventDefault();
           input.setSelectionRange(input.value.length, input.value.length);
         }
         break;
+      }
     }
   };
 
@@ -344,10 +345,11 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       tryFocus();
     };
 
-    document.addEventListener('compositionstart', onCompStart as any);
+    const compHandler = (e: Event) => onCompStart(e as CompositionEvent);
+    document.addEventListener('compositionstart', compHandler);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('compositionstart', onCompStart as any);
+      document.removeEventListener('compositionstart', compHandler);
       document.removeEventListener('keydown', onKeyDown);
     };
   }, []);

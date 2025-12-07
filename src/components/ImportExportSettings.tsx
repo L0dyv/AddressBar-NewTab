@@ -75,12 +75,8 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
 
         try {
             await importSettingsFromFile(pendingFile);
-            setSuccess('设置已导入，页面将自动刷新...');
+            setSuccess('设置已导入');
             onSettingsChanged?.();
-            // 延迟刷新以显示成功消息
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
         } catch (err) {
             console.error('Import settings failed', err);
             setError(err instanceof Error ? err.message : '导入失败');
