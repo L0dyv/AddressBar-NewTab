@@ -118,7 +118,7 @@ function SortableEngineItem({ engine, onSetDefault, onToggleEnabled, skipDeleteC
             设为默认
           </Button>
         )}
-        {engine.id !== 'kagi-assistant' && !engine.isDefault && (
+        {!engine.isDefault && (
           <Button
             variant="ghost"
             size="sm"
@@ -190,11 +190,6 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   };
 
   const removeEngine = (id: string) => {
-    // 防止删除Kagi Assistant
-    if (id === 'kagi-assistant') {
-      return;
-    }
-
     // 防止删除默认搜索引擎
     const targetEngine = engines.find(e => e.id === id);
     if (targetEngine?.isDefault) {
@@ -211,7 +206,15 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
       }
     }
 
-    onEnginesChange(engines.filter(engine => engine.id !== id));
+    const remaining = engines.filter(engine => engine.id !== id);
+    const currentId = localStorage.getItem('currentSearchEngine') ?? '';
+    if (currentId === id) {
+      const fallback = remaining.find(e => e.isDefault)?.id || remaining[0]?.id || 'google';
+      try { localStorage.setItem('currentSearchEngine', fallback); } catch { /* ignore */ }
+      try { window.dispatchEvent(new CustomEvent('settings:updated')); } catch { /* ignore */ }
+    }
+
+    onEnginesChange(remaining);
   };
 
   const setDefault = (id: string) => {
@@ -350,7 +353,7 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除这个搜索引擎？</AlertDialogTitle>
             <AlertDialogDescription>
-              删除后无法恢复；默认搜索引擎与 Kagi Assistant 不能删除。
+              删除后无法恢复；默认搜索引擎不能删除。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex items-center gap-2 py-2">
