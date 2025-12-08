@@ -274,10 +274,11 @@ const pickLatestBackupFile = async (dirUrl: string, cfg: WebDAVConfig): Promise<
     const xml = await resp.text()
     try {
         const doc = new DOMParser().parseFromString(xml, 'application/xml')
-        const responses = Array.from(doc.getElementsByTagName('response'))
+        const all = Array.from(doc.getElementsByTagName('*'))
+        const responses = all.filter(el => el.localName === 'response')
         const files: { href: string; name: string }[] = []
         for (const r of responses) {
-            const hrefEl = r.getElementsByTagName('href')[0]
+            const hrefEl = Array.from(r.getElementsByTagName('*')).find(el => el.localName === 'href') as Element | undefined
             if (!hrefEl || !hrefEl.textContent) continue
             const href = hrefEl.textContent
             let name = ''

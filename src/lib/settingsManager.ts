@@ -1,5 +1,5 @@
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from './defaultSearchEngines';
-import { setStoredValue } from './storage';
+import { setStoredValue, removeStoredValue } from './storage';
 
 // 快速链接类型定义
 export interface QuickLink {
@@ -277,6 +277,9 @@ export function resetAllSettings(): void {
     localStorage.removeItem('currentSearchEngine');
     localStorage.removeItem('deletedBuiltinIds');
     localStorage.setItem('theme', 'system');
+    removeStoredValue('webdavConfig');
+    removeStoredValue('webdavPassword');
+    try { window.dispatchEvent(new CustomEvent('settings:updated')); } catch { void 0 }
 }
 
 /**
