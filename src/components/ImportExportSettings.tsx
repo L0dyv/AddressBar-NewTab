@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Download, Upload, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,6 +19,7 @@ import {
     resetAllSettings,
     getAllSettings,
 } from '@/lib/settingsManager';
+import { getWebDAVConfig, setWebDAVConfig, testWebDAVConnection, uploadBackupToWebDAV, restoreFromWebDAV } from '@/lib/webdav';
 
 interface ImportExportSettingsProps {
     onSettingsChanged?: () => void;
@@ -30,11 +33,78 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showImportConfirm, setShowImportConfirm] = useState(false);
     const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [webdavUrl, setWebdavUrl] = useState('');
+    const [webdavUsername, setWebdavUsername] = useState('');
+    const [webdavPassword, setWebdavPassword] = useState('');
+    const [testingWebdav, setTestingWebdav] = useState(false);
+    const [syncingWebdav, setSyncingWebdav] = useState(false);
+    const [showInsecureConfirm, setShowInsecureConfirm] = useState(false);
+    const [pendingAction, setPendingAction] = useState<"test" | "upload" | "restore" | null>(null);
 
-    // 清除消息
+
     const clearMessages = () => {
         setError(null);
         setSuccess(null);
+    };
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const cfg = await getWebDAVConfig();
+                setWebdavUrl(cfg.url || '');
+                setWebdavUsername(cfg.username || '');
+                setWebdavPassword(cfg.password || '');
+            } catch { void 0; }
+        };
+        load();
+    }, []);
+
+    const protocolIsHttps = () => {
+        try { return new URL(webdavUrl).protocol === 'https:'; } catch { return false; }
+    };
+
+    const performTest = async (allowInsecure: boolean) => {
+        clearMessages();
+        setTestingWebdav(true);
+        try {
+            const res = await testWebDAVConnection({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, { allowInsecure });
+            if (res.ok) {
+                setSuccess('连接正常');
+            } else {
+                setError(res.message || `连接失败（${res.status}）`);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '连接失败');
+        } finally {
+            setTestingWebdav(false);
+        }
+    };
+
+    const performUpload = async (allowInsecure: boolean) => {
+        clearMessages();
+        setSyncingWebdav(true);
+        try {
+            await uploadBackupToWebDAV({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, undefined, { allowInsecure });
+            setSuccess('备份已上传到云端');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '上传失败');
+        } finally {
+            setSyncingWebdav(false);
+        }
+    };
+
+    const performRestore = async (allowInsecure: boolean) => {
+        clearMessages();
+        setSyncingWebdav(true);
+        try {
+            await restoreFromWebDAV({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, { allowInsecure });
+            setSuccess('设置已从云端恢复');
+            onSettingsChanged?.();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '恢复失败');
+        } finally {
+            setSyncingWebdav(false);
+        }
     };
 
     // 导出设置
@@ -182,6 +252,108 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                 </Button>
             </div>
 
+            {/* 云备份（WebDAV） */}
+            <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-4">
+                <h3 className="text-sm font-medium text-foreground">云备份（WebDAV）</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <Label htmlFor="webdav-url">目标文件 URL</Label>
+                        <Input
+                            id="webdav-url"
+                            placeholder="例如：https://example.com/dav/QuickTab/backup.json"
+                            value={webdavUrl}
+                            onChange={(e) => setWebdavUrl(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="webdav-username">用户名</Label>
+                        <Input
+                            id="webdav-username"
+                            value={webdavUsername}
+                            onChange={(e) => setWebdavUsername(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="webdav-password">密码</Label>
+                        <Input
+                            id="webdav-password"
+                            type="password"
+                            value={webdavPassword}
+                            onChange={(e) => setWebdavPassword(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={async () => {
+                            clearMessages();
+                            try {
+                                await setWebDAVConfig({ url: webdavUrl, username: webdavUsername, password: webdavPassword });
+                                setSuccess('WebDAV 配置已保存');
+                                setTimeout(() => setSuccess(null), 3000);
+                            } catch (err) {
+                                setError(err instanceof Error ? err.message : '保存失败');
+                            }
+                        }}
+                    >
+                        保存配置
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        disabled={testingWebdav}
+                        onClick={async () => {
+                            if (protocolIsHttps()) {
+                                await performTest(false);
+                            } else {
+                                setPendingAction('test');
+                                setShowInsecureConfirm(true);
+                            }
+                        }}
+                    >
+                        {testingWebdav ? '测试中...' : '测试连接'}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        disabled={syncingWebdav}
+                        onClick={async () => {
+                            if (protocolIsHttps()) {
+                                await performUpload(false);
+                            } else {
+                                setPendingAction('upload');
+                                setShowInsecureConfirm(true);
+                            }
+                        }}
+                    >
+                        {syncingWebdav ? '上传中...' : '备份到云端'}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        disabled={syncingWebdav}
+                        onClick={async () => {
+                            if (protocolIsHttps()) {
+                                await performRestore(false);
+                            } else {
+                                setPendingAction('restore');
+                                setShowInsecureConfirm(true);
+                            }
+                        }}
+                    >
+                        {syncingWebdav ? '恢复中...' : '从云端恢复'}
+                    </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                    <p>• 请填写完整的文件 URL，PUT 将直接写入该文件</p>
+                    <p>• 也可填写基础 URL，系统将自动创建 QuickTabNavigator/backup.json</p>
+                    <p>• 密码仅保存于浏览器同步存储，不写入本地缓存</p>
+                    <p>• 建议使用 HTTPS 与应用专用密码</p>
+                </div>
+            </div>
+
             {/* 提示信息 */}
             <div className="text-xs text-muted-foreground space-y-1">
                 <p>• 导出的配置文件包含所有搜索引擎、快速链接和主题设置</p>
@@ -236,6 +408,28 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                         >
                             确认重置
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showInsecureConfirm} onOpenChange={setShowInsecureConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>使用非 HTTPS 连接，存在高风险</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            凭据与数据可能在网络中被窃听或篡改。确定要继续吗？
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => { setShowInsecureConfirm(false); setPendingAction(null); }}>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={async () => {
+                            setShowInsecureConfirm(false)
+                            const action = pendingAction
+                            setPendingAction(null)
+                            if (action === 'test') await performTest(true)
+                            else if (action === 'upload') await performUpload(true)
+                            else if (action === 'restore') await performRestore(true)
+                        }}>继续</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
