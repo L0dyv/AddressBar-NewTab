@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => ({
             return JSON.stringify(manifest, null, 2);
           }
         },
-        { src: 'public/favicon.ico', dest: '.' }
+        { src: 'public/favicon.ico', dest: '.' },
+        { src: 'background.js', dest: '.' }
       ]
     })
   ].filter(Boolean),
