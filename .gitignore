@@ -7,6 +7,7 @@ node_modules/
 # Build output
 dist/
 release/
+extensions-*/
 
 # IDE
 .idea/

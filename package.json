@@ -1,12 +1,13 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:ext": "node scripts/build-extension.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "sync-version": "node -e \"const fs=require('fs');const pkg=JSON.parse(fs.readFileSync('./package.json','utf8'));const m=JSON.parse(fs.readFileSync('./manifest.json','utf8'));const cmp=(a,b)=>{const pa=a.split('.').map(Number),pb=b.split('.').map(Number);for(let i=0;i<3;i++){if(pa[i]>pb[i])return 1;if(pa[i]<pb[i])return -1;}return 0;};const v=cmp(pkg.version,m.version)>=0?pkg.version:m.version;pkg.version=v;m.version=v;fs.writeFileSync('./package.json',JSON.stringify(pkg,null,2)+'\\n');fs.writeFileSync('./manifest.json',JSON.stringify(m,null,2)+'\\n');console.log('Synced version to '+v)\"",
