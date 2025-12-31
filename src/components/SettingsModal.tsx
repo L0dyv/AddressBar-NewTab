@@ -6,7 +6,9 @@ import {
     DialogTitle,
     DialogPortal,
     DialogOverlay,
+    DialogDescription,
 } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,9 @@ const CustomDialogContent = React.forwardRef<
             >
                 <X className="h-5 w-5" />
             </button>
+            <VisuallyHidden.Root asChild>
+                <DialogDescription>设置对话框</DialogDescription>
+            </VisuallyHidden.Root>
             <div className="max-h-[90vh] overflow-y-auto rounded-lg">
                 {children}
             </div>
