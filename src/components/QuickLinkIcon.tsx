@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { getCachedFavicon, updateMemoryCache } from "@/lib/faviconCache";
 
 interface QuickLinkIconProps {
     name: string;
@@ -55,13 +56,26 @@ const QuickLinkIcon = ({ name, url, icon, size = 32, className = "" }: QuickLink
         setResolvedSrc(null);
     }, [url]);
 
+    // 首先尝试从内存缓存同步获取
     useEffect(() => {
+        // 先检查内存缓存
+        const cached = getCachedFavicon(pageUrl);
+        if (cached) {
+            setResolvedSrc(cached);
+            return;
+        }
+
+        // 内存缓存没有，才发消息给 background
         if (isExtension && chrome?.runtime?.sendMessage) {
-            const u = pageUrl;
             try {
-                chrome.runtime.sendMessage({ type: 'RESOLVE_FAVICON', url: u }, (res) => {
+                chrome.runtime.sendMessage({ type: 'RESOLVE_FAVICON', url: pageUrl }, (res) => {
                     if (res && (res as { success?: boolean; src?: string }).success && (res as { src?: string }).src) {
-                        setResolvedSrc((res as { src?: string }).src || null);
+                        const src = (res as { src?: string }).src || null;
+                        if (src) {
+                            // 更新内存缓存
+                            updateMemoryCache(pageUrl, src);
+                            setResolvedSrc(src);
+                        }
                     }
                 });
             } catch {

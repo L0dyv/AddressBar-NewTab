@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Quick Tab Navigator",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A smart browser start page with auto-completion based on browser history",
   "permissions": [
     "history",
     "bookmarks",
     "tabs",
-    "storage"
+    "storage",
+    "favicon"
   ],
   "host_permissions": [
     "<all_urls>"

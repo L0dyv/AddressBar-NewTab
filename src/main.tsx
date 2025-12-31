@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { initFaviconCache } from './lib/faviconCache'
 
 type ChromeRuntime = { id?: string }
 type ChromeRoot = { runtime?: ChromeRuntime }
@@ -15,5 +16,7 @@ if (!window.location.search.includes('focus')) {
     if (import.meta.env.DEV && !isExtension && !window.location.search.includes('noreset')) {
         try { localStorage.clear() } catch { void 0 }
     }
+    // 尽早初始化 favicon 缓存（不阻塞渲染）
+    initFaviconCache()
     createRoot(document.getElementById('root')!).render(<App />)
 }
