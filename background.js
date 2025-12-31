@@ -100,6 +100,13 @@ const resolveFavicon = async (pageUrl) => {
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 处理打开扩展程序页面的请求
+    if (message && message.type === "OPEN_EXTENSIONS_PAGE") {
+        chrome.tabs.create({ url: "chrome://extensions" });
+        sendResponse({ success: true });
+        return false;
+    }
+
     if (message && message.type === "FETCH_PAGE_TITLE" && message.url) {
         (async () => {
             try {

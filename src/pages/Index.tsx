@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings, Search } from "lucide-react";
+import { Settings, Search, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -224,6 +224,13 @@ const Index = () => {
 
   const isKagiSelected = searchEngine === 'kagi-assistant';
 
+  // 打开扩展程序页面
+  const handleOpenExtensions = () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: "OPEN_EXTENSIONS_PAGE" });
+    }
+  };
+
   useEffect(() => {
     const def = searchEngines.find(e => e.isDefault);
     if (!def) return;
@@ -409,6 +416,17 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {/* 右下角扩展程序按钮 */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleOpenExtensions}
+        className="fixed bottom-4 right-4 text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
+        title="打开扩展程序页面"
+      >
+        <Puzzle className="h-5 w-5" />
+      </Button>
 
       {/* 设置弹窗 */}
       <SettingsModal

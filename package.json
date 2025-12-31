@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "sync-version": "node -e \"const fs=require('fs');const pkg=require('./package.json');const m=require('./manifest.json');m.version=pkg.version;fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\\n');console.log('Synced manifest.json version to '+pkg.version)\"",
+    "version": "npm run sync-version",
     "package:zip": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -Command \"New-Item -ItemType Directory -Force -Path release | Out-Null; Compress-Archive -Path dist\\* -DestinationPath release\\Quick-Tab-Navigator-$env:npm_package_version.zip -Force\""
   },
   "dependencies": {
