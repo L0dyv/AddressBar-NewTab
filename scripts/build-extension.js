@@ -25,14 +25,14 @@ const version = packageJson.version;
 // Define paths
 const distDir = path.join(rootDir, 'dist');
 const releaseDir = path.join(rootDir, 'release');
-const extensionDir = path.join(releaseDir, `extensions-${version}`);
+const extensionDir = path.join(releaseDir, 'extensions');
 
 console.log(`\n[BUILD] Starting extension build v${version}...\n`);
 
 // 1. Run Vite build
 try {
     console.log('[BUILD] Running vite build...');
-    execSync('npm run build', {
+    execSync('npx vite build', {
         cwd: rootDir,
         stdio: 'inherit'
     });
@@ -47,21 +47,18 @@ if (!fs.existsSync(releaseDir)) {
     fs.mkdirSync(releaseDir, { recursive: true });
 }
 
-// 3. Remove old extensions-* directories in release folder
-const files = fs.readdirSync(releaseDir);
-for (const file of files) {
-    if (file.startsWith('extensions-')) {
-        const oldDir = path.join(releaseDir, file);
-        console.log(`[BUILD] Removing old directory: release/${file}`);
-        fs.rmSync(oldDir, { recursive: true, force: true });
-    }
+// 3. Remove old extensions directory in release folder
+const extPath = path.join(releaseDir, 'extensions');
+if (fs.existsSync(extPath)) {
+    console.log('[BUILD] Removing old directory: release/extensions');
+    fs.rmSync(extPath, { recursive: true, force: true });
 }
 
 // 4. Move dist to release/extensions-{version}
 if (fs.existsSync(distDir)) {
-    console.log(`[BUILD] Moving dist -> release/extensions-${version}`);
+    console.log('[BUILD] Moving dist -> release/extensions');
     fs.renameSync(distDir, extensionDir);
-    console.log(`\n[DONE] Build complete! Output directory: release/extensions-${version}`);
+    console.log('\n[DONE] Build complete! Output directory: release/extensions');
     console.log(`[PATH] ${extensionDir}\n`);
 } else {
     console.error('[ERROR] dist directory does not exist');

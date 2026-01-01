@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, Search } from "lucide-react";
+import { Settings, Search, Plus, Check } from "lucide-react";
 import AutoComplete from "@/components/AutoComplete";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
@@ -196,6 +196,39 @@ export default function Popup() {
         navigateInCurrentTab("chrome://newtab");
     };
 
+    // 添加当前页面到快速链接
+    const [addStatus, setAddStatus] = useState<'idle' | 'added' | 'exists'>('idle');
+    const handleAddCurrentPage = async () => {
+        if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
+
+        chrome.runtime.sendMessage({ type: "GET_CURRENT_TAB" }, async (res: unknown) => {
+            const response = res as { success?: boolean; url?: string; title?: string } | undefined;
+            if (!response?.success || !response.url) return;
+
+            // 检查是否已存在
+            const existingLinks = await getStoredValue<QuickLink[]>('quickLinks', []);
+            const exists = existingLinks.some(link => link.url === response.url);
+            if (exists) {
+                setAddStatus('exists');
+                setTimeout(() => setAddStatus('idle'), 2000);
+                return;
+            }
+
+            // 添加新链接
+            const newLink: QuickLink = {
+                id: `link-${Date.now()}`,
+                name: response.title || new URL(response.url).hostname,
+                url: response.url,
+                enabled: true,
+            };
+            const updated = [...existingLinks, newLink];
+            await setStoredValue('quickLinks', updated);
+            setQuickLinks(updated.filter(l => l.enabled));
+            setAddStatus('added');
+            setTimeout(() => setAddStatus('idle'), 2000);
+        });
+    };
+
     const isKagiSelected = searchEngine === 'kagi-assistant';
 
     // 同步主题设置
@@ -270,7 +303,7 @@ export default function Popup() {
     }, []);
 
     // 动态计算高度
-    const popupHeight = showQuickLinks ? "280px" : "200px";
+    const popupHeight = showQuickLinks ? "320px" : "240px";
 
     return (
         <div
@@ -355,6 +388,24 @@ export default function Popup() {
                             ))}
                         </div>
                     )}
+
+                    {/* 添加当前页面按钮 */}
+                    <div className="mt-auto pt-2 border-t border-stone-200 dark:border-stone-800">
+                        <Button
+                            variant="ghost"
+                            onClick={handleAddCurrentPage}
+                            disabled={addStatus !== 'idle'}
+                            className="w-full h-9 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
+                        >
+                            {addStatus === 'added' ? (
+                                <><Check className="h-3.5 w-3.5 mr-1.5 text-green-500" />已添加</>
+                            ) : addStatus === 'exists' ? (
+                                <>已存在</>
+                            ) : (
+                                <><Plus className="h-3.5 w-3.5 mr-1.5" />收藏当前页面</>
+                            )}
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

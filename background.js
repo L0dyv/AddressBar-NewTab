@@ -100,6 +100,18 @@ const resolveFavicon = async (pageUrl) => {
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 获取当前活动标签页信息
+    if (message && message.type === "GET_CURRENT_TAB") {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs && tabs[0]) {
+                sendResponse({ success: true, url: tabs[0].url, title: tabs[0].title });
+            } else {
+                sendResponse({ success: false });
+            }
+        });
+        return true;
+    }
+
     // 处理打开扩展程序页面的请求
     if (message && message.type === "OPEN_EXTENSIONS_PAGE") {
         chrome.tabs.create({ url: "chrome://extensions" });
