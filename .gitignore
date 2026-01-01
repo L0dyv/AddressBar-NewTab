@@ -15,6 +15,9 @@ extensions-*/
 *.code-workspace
 .trae/
 
+# Agent
+.agent/
+
 # Cursor AI
 .cursorindexingignore
 .cursor/
