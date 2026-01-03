@@ -194,7 +194,7 @@ const Index = () => {
     if (def && def.id !== searchEngine) {
       setSearchEngine(def.id);
     }
-  }, [searchEngines]);
+  }, [searchEngines, searchEngine]);
 
   // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎
   useEffect(() => {
