@@ -182,7 +182,7 @@ const Index = () => {
 
   // Memoize enabled quick links list
   const enabledQuickLinks = useMemo(() => 
-    quickLinks.filter(l => l.enabled === true),
+    quickLinks.filter(l => l.enabled !== false),
     [quickLinks]
   );
 
@@ -194,7 +194,7 @@ const Index = () => {
     if (def && def.id !== searchEngine) {
       setSearchEngine(def.id);
     }
-  }, [searchEngines, searchEngine]);
+  }, [searchEngines]);
 
   // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎
   useEffect(() => {

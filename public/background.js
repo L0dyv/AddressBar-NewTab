@@ -22,7 +22,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         'Accept': 'text/html',
       }
     })
-      .then(response => response.text())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
       .then(html => {
         // 解析 HTML 获取 title
         const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
