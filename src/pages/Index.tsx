@@ -32,50 +32,19 @@ const Index = () => {
   const [showImportExport, setShowImportExport] = useState(false);
   const [showShortcutHints, setShowShortcutHints] = useState(false);
 
-  // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
-  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
-    try {
-      const saved = localStorage.getItem('searchEngines');
-      if (saved) return mergeBuiltinEngines(JSON.parse(saved));
-    } catch {
-      /* ignore */
-    }
-    return defaultSearchEngines;
-  });
-
-  // 从 localStorage 加载快速链接配置
-  const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() => {
-    try {
-      const saved = localStorage.getItem('quickLinks');
-      if (saved) {
-        return JSON.parse(saved).map((link: QuickLink) => ({
-          ...link,
-          enabled: link.enabled !== false,
-        }));
-      }
-    } catch {
-      /* ignore */
-    }
-    return [];
-  });
-
-  // 从 localStorage 加载当前选中的搜索引擎
+  // Initialize state without localStorage access (will be loaded from chrome.storage.sync)
+  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(defaultSearchEngines);
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [searchEngine, setSearchEngine] = useState(() => {
-    try {
-      const saved = localStorage.getItem('currentSearchEngine');
-      if (saved) return saved;
-    } catch {
-      /* ignore */
-    }
     const def = defaultSearchEngines.find(e => e.isDefault);
     return def ? def.id : "google";
   });
 
-  // 首次加载：迁移并从 chrome.storage.sync 取值
+  // Load settings once on mount and listen for updates
   useEffect(() => {
     let mounted = true;
 
-    const load = async () => {
+    const loadSettings = async () => {
       await migrateLocalStorageToSync([
         'searchEngines',
         'quickLinks',
@@ -107,38 +76,17 @@ const Index = () => {
       }
     };
 
-    load();
+    // Initial load
+    loadSettings();
+
+    // Listen for updates (e.g., from import/export)
+    const handler = () => { loadSettings(); };
+    window.addEventListener('settings:updated', handler);
+    
     return () => {
       mounted = false;
+      window.removeEventListener('settings:updated', handler);
     };
-  }, []);
-
-  useEffect(() => {
-    const rehydrate = async () => {
-      const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
-      const [storedEngines, storedLinks, storedEngineId] = await Promise.all([
-        getStoredValue<SearchEngine[]>('searchEngines', defaultSearchEngines),
-        getStoredValue<QuickLink[]>('quickLinks', []),
-        getStoredValue<string>('currentSearchEngine', fallbackEngineId),
-      ]);
-
-      const mergedEngines = mergeBuiltinEngines(storedEngines);
-      setSearchEngines(mergedEngines);
-
-      const normalizedLinks = storedLinks.map((link) => ({
-        ...link,
-        enabled: link.enabled !== undefined ? link.enabled : true,
-      }));
-      setQuickLinks(normalizedLinks);
-
-      if (storedEngineId) {
-        setSearchEngine(storedEngineId);
-      }
-    };
-
-    const handler = () => { rehydrate(); };
-    window.addEventListener('settings:updated', handler);
-    return () => window.removeEventListener('settings:updated', handler);
   }, []);
 
   // 保存搜索引擎配置到 localStorage
@@ -198,8 +146,6 @@ const Index = () => {
   const handleSubmit = (value: string) => {
     if (!value.trim()) return;
 
-    console.log('Submitting search with engine:', searchEngine, 'value:', value);
-
     if (isURL(value)) {
       const url = value.startsWith('http') ? value : `https://${value}`;
       window.location.href = url;
@@ -218,7 +164,6 @@ const Index = () => {
 
   // 修复搜索引擎切换 - 移除问题的useEffect
   const handleSearchEngineChange = (engineId: string) => {
-    console.log('Changing search engine to:', engineId);
     setSearchEngine(engineId);
   };
 
@@ -231,10 +176,12 @@ const Index = () => {
     }
   };
 
+  // Update search engine when default changes
   useEffect(() => {
     const def = searchEngines.find(e => e.isDefault);
-    if (!def) return;
-    setSearchEngine((prev) => (def.id !== prev ? def.id : prev));
+    if (def && def.id !== searchEngine) {
+      setSearchEngine(def.id);
+    }
   }, [searchEngines]);
 
   // 键盘快捷键：Alt + 数字 切换已启用的搜索引擎

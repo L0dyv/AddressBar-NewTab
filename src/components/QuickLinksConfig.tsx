@@ -85,18 +85,12 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
 
   // 通过 background.js 获取网页标题
   const fetchPageTitle = async (url: string): Promise<string> => {
-    console.log('[QuickLinks] 开始获取标题:', url);
-    console.log('[QuickLinks] chrome 对象:', typeof chrome);
-    console.log('[QuickLinks] chrome.runtime:', typeof chrome !== 'undefined' ? chrome.runtime : 'undefined');
-
     return new Promise((resolve) => {
       // 检查是否在扩展环境中
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-        console.log('[QuickLinks] 发送消息到 background...');
         chrome.runtime.sendMessage<{ success: boolean; title?: string }>(
           { type: 'FETCH_PAGE_TITLE', url },
           (response) => {
-            console.log('[QuickLinks] 收到响应:', response);
             if (response?.success && response.title) {
               resolve(response.title);
             } else {
@@ -111,7 +105,6 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
           }
         );
       } else {
-        console.log('[QuickLinks] 不在扩展环境中，使用域名');
         // 非扩展环境，使用域名
         try {
           const urlObj = new URL(url);

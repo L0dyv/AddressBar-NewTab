@@ -31,20 +31,15 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   // 获取Chrome浏览器历史记录
   const getChromeHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
     if (!isExtension || !text.trim()) {
-      console.log('Extension not available or empty text for history');
       return [];
     }
 
     try {
-      console.log('Searching Chrome history for:', text);
-
       const results = await chrome.history.search({
         text: text,
         startTime: 0,
         maxResults: 50
       });
-
-      console.log('Chrome history results:', results);
 
       return results.map((item, index) => ({
         id: `history-${index}`,
@@ -62,13 +57,10 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   // 获取Chrome书签
   const getChromeBookmarks = useCallback(async (text: string): Promise<SuggestionItem[]> => {
     if (!isExtension || !text.trim()) {
-      console.log('Extension not available for bookmarks or empty text');
       return [];
     }
 
     try {
-      console.log('Searching Chrome bookmarks for:', text);
-
       const bookmarkTree = await chrome.bookmarks.getTree();
 
       const allBookmarks: chrome.bookmarks.BookmarkTreeNode[] = [];
@@ -91,8 +83,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           bookmark.url?.toLowerCase().includes(text.toLowerCase())
         )
         .slice(0, 5);
-
-      console.log('Chrome bookmark results:', filtered);
 
       return filtered.map((bookmark, index) => ({
         id: `bookmark-${index}`,
@@ -137,25 +127,18 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       return;
     }
 
-    console.log('Getting suggestions for query:', query);
-    console.log('Chrome extension available:', isExtension);
-
     try {
       let historyResults: SuggestionItem[] = [];
       let bookmarkResults: SuggestionItem[] = [];
 
       if (isExtension) {
-        console.log('Using Chrome API for suggestions');
         [historyResults, bookmarkResults] = await Promise.all([
           getChromeHistory(query),
           getChromeBookmarks(query)
         ]);
-      } else {
-        console.log('Chrome extension not available, no suggestions');
       }
 
       const allSuggestions = [...historyResults, ...bookmarkResults];
-      console.log('Total suggestions found:', allSuggestions.length);
 
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
@@ -184,7 +167,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    console.log('Input changed to:', newValue);
     onChange(newValue);
 
     if (!isComposing) {
@@ -193,12 +175,10 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   };
 
   const handleCompositionStart = () => {
-    console.log('Composition started');
     setIsComposing(true);
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
-    console.log('Composition ended');
     setIsComposing(false);
     const newValue = e.currentTarget.value;
     onChange(newValue);
@@ -289,35 +269,15 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     };
   }, []);
 
-  // 调试信息
+  // 自动聚焦到输入框 (optimized with single delayed focus)
   useEffect(() => {
-    console.log('AutoComplete component mounted');
-    console.log('Extension available:', isExtension);
-    console.log('Chrome object:', typeof chrome !== 'undefined' ? 'available' : 'undefined');
-    if (typeof chrome !== 'undefined') {
-      console.log('Chrome.history:', typeof chrome.history);
-      console.log('Chrome.bookmarks:', typeof chrome.bookmarks);
-    }
-  }, [isExtension]);
+    const timer = setTimeout(() => {
+      if (inputRef.current && document.activeElement !== inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
 
-  // 自动聚焦到输入框
-  useEffect(() => {
-    // 多次尝试聚焦，确保能够获得焦点
-    const focusAttempts = [50, 150, 300, 500];
-    const timers: NodeJS.Timeout[] = [];
-
-    focusAttempts.forEach(delay => {
-      const timer = setTimeout(() => {
-        if (inputRef.current && document.activeElement !== inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, delay);
-      timers.push(timer);
-    });
-
-    return () => {
-      timers.forEach(timer => clearTimeout(timer));
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   // 监听键盘 & 组合事件，任何输入法都能触发
