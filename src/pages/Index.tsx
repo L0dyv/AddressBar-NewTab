@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Settings, Search, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,7 +105,7 @@ const Index = () => {
   }, [searchEngine]);
 
   // 判断是否为URL
-  const isURL = (text: string) => {
+  const isURL = useCallback((text: string) => {
     // 不能包含空格
     if (text.includes(' ')) return false;
 
@@ -129,10 +129,10 @@ const Index = () => {
     } catch {
       return false;
     }
-  };
+  }, []);
 
   // 处理Kagi Assistant搜索
-  const handleKagiSearch = (query: string) => {
+  const handleKagiSearch = useCallback((query: string) => {
     const params = new URLSearchParams({
       q: query,
       internet: 'true'
@@ -140,10 +140,10 @@ const Index = () => {
 
     const url = `https://kagi.com/assistant?${params.toString()}`;
     window.location.href = url;
-  };
+  }, []);
 
   // 处理搜索/导航
-  const handleSubmit = (value: string) => {
+  const handleSubmit = useCallback((value: string) => {
     if (!value.trim()) return;
 
     if (isURL(value)) {
@@ -160,21 +160,33 @@ const Index = () => {
         }
       }
     }
-  };
+  }, [isURL, searchEngines, searchEngine, handleKagiSearch]);
 
-  // 修复搜索引擎切换 - 移除问题的useEffect
-  const handleSearchEngineChange = (engineId: string) => {
+  // 修复搜索引擎切换
+  const handleSearchEngineChange = useCallback((engineId: string) => {
     setSearchEngine(engineId);
-  };
-
-  const isKagiSelected = searchEngine === 'kagi-assistant';
+  }, []);
 
   // 打开扩展程序页面
-  const handleOpenExtensions = () => {
+  const handleOpenExtensions = useCallback(() => {
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       chrome.runtime.sendMessage({ type: "OPEN_EXTENSIONS_PAGE" });
     }
-  };
+  }, []);
+
+  // Memoize enabled search engines list
+  const enabledSearchEngines = useMemo(() => 
+    searchEngines.filter(e => e.enabled !== false),
+    [searchEngines]
+  );
+
+  // Memoize enabled quick links list
+  const enabledQuickLinks = useMemo(() => 
+    quickLinks.filter(l => l.enabled === true),
+    [quickLinks]
+  );
+
+  const isKagiSelected = searchEngine === 'kagi-assistant';
 
   // Update search engine when default changes
   useEffect(() => {
@@ -194,11 +206,10 @@ const Index = () => {
       // 仅响应 Alt + 数字
       if (!e.altKey) return;
 
-      const enabled = searchEngines.filter(s => s.enabled !== false);
-      if (enabled.length === 0) return;
+      if (enabledSearchEngines.length === 0) return;
 
-      const idx = Math.min(parseInt(key, 10) - 1, enabled.length - 1);
-      const target = enabled[idx];
+      const idx = Math.min(parseInt(key, 10) - 1, enabledSearchEngines.length - 1);
+      const target = enabledSearchEngines[idx];
       if (target && target.id !== searchEngine) {
         e.preventDefault();
         setSearchEngine(target.id);
@@ -207,7 +218,7 @@ const Index = () => {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [searchEngines, searchEngine]);
+  }, [enabledSearchEngines, searchEngine]);
 
   // 按住 Alt 键 400ms 后显示快捷键提示
   useEffect(() => {
@@ -314,7 +325,7 @@ const Index = () => {
 
           {/* 搜索引擎选择 - V0 风格圆角标签 */}
           <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-            {searchEngines.filter(e => e.enabled !== false).map((engine, index) => (
+            {enabledSearchEngines.map((engine, index) => (
               <button
                 key={engine.id}
                 type="button"
@@ -341,9 +352,9 @@ const Index = () => {
         </div>
 
         {/* 快速链接区域 - 仅图标样式（V0 风格）*/}
-        {quickLinks.filter(l => l.enabled === true).length > 0 && (
+        {enabledQuickLinks.length > 0 && (
           <div className="grid grid-cols-4 md:grid-cols-6 gap-4 md:gap-6 w-full">
-            {quickLinks.filter(l => l.enabled === true).map((link) => (
+            {enabledQuickLinks.map((link) => (
               <a
                 key={link.id}
                 href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
