@@ -75,12 +75,15 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
 
-  // 编辑模式下禁用 KeyboardSensor，避免干扰中文输入法
+  // 使用固定的 sensors 配置，避免动态变化导致 dnd-kit 崩溃
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    ...(!editingId ? [useSensor(KeyboardSensor, {
+    useSensor(PointerSensor, {
+      // 编辑模式下禁用拖拽
+      activationConstraint: editingId ? { distance: Infinity } : undefined,
+    }),
+    useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })] : [])
+    })
   );
 
   // 通过 background.js 获取网页标题

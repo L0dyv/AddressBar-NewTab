@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { t } from "@/lib/i18n";
 
 interface SuggestionItem {
   id: string;
@@ -46,13 +47,20 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
       console.log('Chrome history results:', results);
 
-      return results.map((item, index) => ({
-        id: `history-${index}`,
-        title: item.title || item.url || '',
-        url: item.url || '',
-        favicon: `chrome://favicon/${item.url}`,
-        type: 'history' as const
-      }));
+      return results.map((item, index) => {
+        let faviconUrl = '';
+        try {
+          const hostname = new URL(item.url || '').hostname;
+          faviconUrl = `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+        } catch { /* ignore */ }
+        return {
+          id: `history-${index}`,
+          title: item.title || item.url || '',
+          url: item.url || '',
+          favicon: faviconUrl,
+          type: 'history' as const
+        };
+      });
     } catch (error) {
       console.error('Failed to get Chrome history:', error);
       return [];
@@ -94,13 +102,20 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
       console.log('Chrome bookmark results:', filtered);
 
-      return filtered.map((bookmark, index) => ({
-        id: `bookmark-${index}`,
-        title: bookmark.title || bookmark.url || '',
-        url: bookmark.url || '',
-        favicon: `chrome://favicon/${bookmark.url}`,
-        type: 'bookmark' as const
-      }));
+      return filtered.map((bookmark, index) => {
+        let faviconUrl = '';
+        try {
+          const hostname = new URL(bookmark.url || '').hostname;
+          faviconUrl = `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+        } catch { /* ignore */ }
+        return {
+          id: `bookmark-${index}`,
+          title: bookmark.title || bookmark.url || '',
+          url: bookmark.url || '',
+          favicon: faviconUrl,
+          type: 'bookmark' as const
+        };
+      });
     } catch (error) {
       console.error('Failed to get Chrome bookmarks:', error);
       return [];
@@ -383,7 +398,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                {suggestion.favicon && suggestion.favicon.startsWith('chrome://') ? (
+                {suggestion.favicon ? (
                   <img src={suggestion.favicon} alt="" className="w-4 h-4" onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }} />
@@ -404,7 +419,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
                   ? 'bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300'
                   : 'bg-stone-300 dark:bg-stone-600 text-stone-800 dark:text-stone-200'
                   }`}>
-                  {suggestion.type === 'history' ? '历史' : '书签'}
+                  {suggestion.type === 'history' ? t('autocomplete.history') : t('autocomplete.bookmark')}
                 </span>
               </div>
             </div>

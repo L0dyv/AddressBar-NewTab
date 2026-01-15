@@ -20,12 +20,14 @@ import {
     getAllSettings,
 } from '@/lib/settingsManager';
 import { getWebDAVConfig, setWebDAVConfig, testWebDAVConnection, uploadBackupToWebDAV, restoreFromWebDAV } from '@/lib/webdav';
+import { useI18n } from '@/hooks/useI18n';
 
 interface ImportExportSettingsProps {
     onSettingsChanged?: () => void;
 }
 
 export default function ImportExportSettings({ onSettingsChanged }: ImportExportSettingsProps) {
+    const { t, locale, setLocale, supportedLocales } = useI18n();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [importing, setImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -69,12 +71,12 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
         try {
             const res = await testWebDAVConnection({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, { allowInsecure });
             if (res.ok) {
-                setSuccess('连接正常');
+                setSuccess(t('importExport.connectionOk'));
             } else {
-                setError(res.message || `连接失败（${res.status}）`);
+                setError(res.message || `${t('importExport.connectionFailed')}（${res.status}）`);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : '连接失败');
+            setError(err instanceof Error ? err.message : t('importExport.connectionFailed'));
         } finally {
             setTestingWebdav(false);
         }
@@ -85,9 +87,9 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
         setSyncingWebdav(true);
         try {
             await uploadBackupToWebDAV({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, undefined, { allowInsecure });
-            setSuccess('备份已上传到云端');
+            setSuccess(t('importExport.backupUploaded'));
         } catch (err) {
-            setError(err instanceof Error ? err.message : '上传失败');
+            setError(err instanceof Error ? err.message : t('importExport.uploadFailed'));
         } finally {
             setSyncingWebdav(false);
         }
@@ -98,10 +100,10 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
         setSyncingWebdav(true);
         try {
             await restoreFromWebDAV({ url: webdavUrl, username: webdavUsername, password: webdavPassword }, { allowInsecure });
-            setSuccess('设置已从云端恢复');
+            setSuccess(t('importExport.settingsRestored'));
             onSettingsChanged?.();
         } catch (err) {
-            setError(err instanceof Error ? err.message : '恢复失败');
+            setError(err instanceof Error ? err.message : t('importExport.restoreFailed'));
         } finally {
             setSyncingWebdav(false);
         }
@@ -112,10 +114,10 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
         clearMessages();
         try {
             downloadSettings();
-            setSuccess('设置已导出');
+            setSuccess(t('importExport.settingsExported'));
             setTimeout(() => setSuccess(null), 3000);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '导出失败');
+            setError(err instanceof Error ? err.message : t('importExport.exportFailed'));
         }
     };
 
@@ -145,11 +147,11 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
 
         try {
             await importSettingsFromFile(pendingFile);
-            setSuccess('设置已导入');
+            setSuccess(t('importExport.settingsImported'));
             onSettingsChanged?.();
         } catch (err) {
             console.error('Import settings failed', err);
-            setError(err instanceof Error ? err.message : '导入失败');
+            setError(err instanceof Error ? err.message : t('importExport.importFailed'));
         } finally {
             setImporting(false);
             setPendingFile(null);
@@ -173,13 +175,13 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
         setShowResetConfirm(false);
         try {
             resetAllSettings();
-            setSuccess('设置已重置，页面将自动刷新...');
+            setSuccess(t('importExport.settingsReset'));
             onSettingsChanged?.();
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '重置失败');
+            setError(err instanceof Error ? err.message : t('importExport.resetFailed'));
         }
     };
 
@@ -188,7 +190,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
     const summary = {
         searchEngines: settings.searchEngines.length,
         quickLinks: settings.quickLinks.length,
-        theme: settings.theme === 'system' ? '跟随系统' : settings.theme === 'dark' ? '深色' : '浅色',
+        theme: settings.theme === 'system' ? t('theme.system') : settings.theme === 'dark' ? t('theme.dark') : t('theme.light'),
     };
 
     return (
@@ -202,20 +204,39 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                 className="hidden"
             />
 
+            {/* 语言设置 */}
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                <h3 className="text-sm font-medium text-foreground mb-3">{t('language.title')}</h3>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-foreground">{t('language.current')}</p>
+                    </div>
+                    <select
+                        value={locale}
+                        onChange={(e) => setLocale(e.target.value as 'zh-CN' | 'en')}
+                        className="px-3 py-1.5 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 dark:focus:ring-stone-600"
+                    >
+                        {supportedLocales.map((loc) => (
+                            <option key={loc.value} value={loc.value}>{loc.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
             {/* 当前设置摘要 */}
             <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                <h3 className="text-sm font-medium text-foreground mb-3">当前设置概览</h3>
+                <h3 className="text-sm font-medium text-foreground mb-3">{t('importExport.currentSettings')}</h3>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                        <span className="text-muted-foreground">搜索引擎</span>
-                        <p className="font-medium text-foreground">{summary.searchEngines} 个</p>
+                        <span className="text-muted-foreground">{t('importExport.searchEnginesCount')}</span>
+                        <p className="font-medium text-foreground">{summary.searchEngines} {t('importExport.unit')}</p>
                     </div>
                     <div>
-                        <span className="text-muted-foreground">快速链接</span>
-                        <p className="font-medium text-foreground">{summary.quickLinks} 个</p>
+                        <span className="text-muted-foreground">{t('importExport.quickLinksCount')}</span>
+                        <p className="font-medium text-foreground">{summary.quickLinks} {t('importExport.unit')}</p>
                     </div>
                     <div>
-                        <span className="text-muted-foreground">主题</span>
+                        <span className="text-muted-foreground">{t('importExport.themeLabel')}</span>
                         <p className="font-medium text-foreground">{summary.theme}</p>
                     </div>
                 </div>
@@ -223,11 +244,11 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
 
             {/* 搜索行为设置 */}
             <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                <h3 className="text-sm font-medium text-foreground mb-3">搜索行为</h3>
+                <h3 className="text-sm font-medium text-foreground mb-3">{t('importExport.searchBehavior')}</h3>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-foreground">在新标签页打开搜索结果</p>
-                        <p className="text-xs text-muted-foreground">启用后，搜索结果将在新标签页打开而非当前页面</p>
+                        <p className="text-sm font-medium text-foreground">{t('importExport.openInNewTab')}</p>
+                        <p className="text-xs text-muted-foreground">{t('importExport.openInNewTabDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -256,7 +277,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                     className="flex-1 gap-2"
                 >
                     <Download className="h-4 w-4" />
-                    导出设置
+                    {t('importExport.exportBtn')}
                 </Button>
 
                 <Button
@@ -266,7 +287,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                     disabled={importing}
                 >
                     <Upload className="h-4 w-4" />
-                    {importing ? '导入中...' : '导入设置'}
+                    {importing ? t('importExport.importing') : t('importExport.importBtn')}
                 </Button>
 
                 <Button
@@ -275,25 +296,25 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                     className="flex-1 gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                     <RotateCcw className="h-4 w-4" />
-                    重置设置
+                    {t('importExport.resetBtn')}
                 </Button>
             </div>
 
             {/* 云备份（WebDAV） */}
             <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-4">
-                <h3 className="text-sm font-medium text-foreground">云备份（WebDAV）</h3>
+                <h3 className="text-sm font-medium text-foreground">{t('importExport.cloudBackup')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <Label htmlFor="webdav-url">目标文件 URL</Label>
+                        <Label htmlFor="webdav-url">{t('importExport.targetUrl')}</Label>
                         <Input
                             id="webdav-url"
-                            placeholder="例如：https://example.com/dav/QuickTab/backup.json"
+                            placeholder={t('importExport.targetUrlPlaceholder')}
                             value={webdavUrl}
                             onChange={(e) => setWebdavUrl(e.target.value)}
                         />
                     </div>
                     <div>
-                        <Label htmlFor="webdav-username">用户名</Label>
+                        <Label htmlFor="webdav-username">{t('importExport.username')}</Label>
                         <Input
                             id="webdav-username"
                             value={webdavUsername}
@@ -301,7 +322,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                         />
                     </div>
                     <div>
-                        <Label htmlFor="webdav-password">密码</Label>
+                        <Label htmlFor="webdav-password">{t('importExport.password')}</Label>
                         <Input
                             id="webdav-password"
                             type="password"
@@ -318,14 +339,14 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                             clearMessages();
                             try {
                                 await setWebDAVConfig({ url: webdavUrl, username: webdavUsername, password: webdavPassword });
-                                setSuccess('WebDAV 配置已保存');
+                                setSuccess(t('importExport.configSaved'));
                                 setTimeout(() => setSuccess(null), 3000);
                             } catch (err) {
-                                setError(err instanceof Error ? err.message : '保存失败');
+                                setError(err instanceof Error ? err.message : t('importExport.saveFailed'));
                             }
                         }}
                     >
-                        保存配置
+                        {t('importExport.saveConfig')}
                     </Button>
                     <Button
                         variant="outline"
@@ -340,7 +361,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                             }
                         }}
                     >
-                        {testingWebdav ? '测试中...' : '测试连接'}
+                        {testingWebdav ? t('importExport.testing') : t('importExport.testConnection')}
                     </Button>
                     <Button
                         variant="outline"
@@ -355,7 +376,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                             }
                         }}
                     >
-                        {syncingWebdav ? '上传中...' : '备份到云端'}
+                        {syncingWebdav ? t('importExport.uploading') : t('importExport.backupToCloud')}
                     </Button>
                     <Button
                         variant="outline"
@@ -370,22 +391,22 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                             }
                         }}
                     >
-                        {syncingWebdav ? '恢复中...' : '从云端恢复'}
+                        {syncingWebdav ? t('importExport.restoring') : t('importExport.restoreFromCloud')}
                     </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                    <p>• 请填写完整的文件 URL，PUT 将直接写入该文件</p>
-                    <p>• 也可填写基础 URL，系统将自动创建 QuickTabNavigator/backup.json</p>
-                    <p>• 密码仅保存于浏览器同步存储，不写入本地缓存</p>
-                    <p>• 建议使用 HTTPS 与应用专用密码</p>
+                    <p>• {t('importExport.webdavHint1')}</p>
+                    <p>• {t('importExport.webdavHint2')}</p>
+                    <p>• {t('importExport.webdavHint3')}</p>
+                    <p>• {t('importExport.webdavHint4')}</p>
                 </div>
             </div>
 
             {/* 提示信息 */}
             <div className="text-xs text-muted-foreground space-y-1">
-                <p>• 导出的配置文件包含所有搜索引擎、快速链接和主题设置</p>
-                <p>• 导入设置会覆盖当前所有配置</p>
-                <p>• 重置会将所有设置恢复为默认值</p>
+                <p>• {t('importExport.hint1')}</p>
+                <p>• {t('importExport.hint2')}</p>
+                <p>• {t('importExport.hint3')}</p>
             </div>
 
             {/* 成功/错误消息 */}
@@ -406,14 +427,14 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
             <AlertDialog open={showImportConfirm} onOpenChange={setShowImportConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认导入设置？</AlertDialogTitle>
+                        <AlertDialogTitle>{t('importExport.confirmImportTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            导入设置将会覆盖当前所有配置，包括搜索引擎、快速链接和主题设置。此操作无法撤销。
+                            {t('importExport.confirmImportDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={cancelImport}>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmImport}>确认导入</AlertDialogAction>
+                        <AlertDialogCancel onClick={cancelImport}>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmImport}>{t('importExport.confirmImportBtn')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -422,18 +443,18 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
             <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认重置所有设置？</AlertDialogTitle>
+                        <AlertDialogTitle>{t('importExport.confirmResetTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            这将删除所有自定义配置，恢复为默认设置。此操作无法撤销，建议先导出当前配置作为备份。
+                            {t('importExport.confirmResetDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmReset}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            确认重置
+                            {t('importExport.confirmResetBtn')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -442,13 +463,13 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
             <AlertDialog open={showInsecureConfirm} onOpenChange={setShowInsecureConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>使用非 HTTPS 连接，存在高风险</AlertDialogTitle>
+                        <AlertDialogTitle>{t('importExport.insecureTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            凭据与数据可能在网络中被窃听或篡改。确定要继续吗？
+                            {t('importExport.insecureDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => { setShowInsecureConfirm(false); setPendingAction(null); }}>取消</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => { setShowInsecureConfirm(false); setPendingAction(null); }}>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={async () => {
                             setShowInsecureConfirm(false)
                             const action = pendingAction
@@ -456,7 +477,7 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                             if (action === 'test') await performTest(true)
                             else if (action === 'upload') await performUpload(true)
                             else if (action === 'restore') await performRestore(true)
-                        }}>继续</AlertDialogAction>
+                        }}>{t('importExport.continue')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

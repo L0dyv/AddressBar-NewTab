@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings, Search, Puzzle } from "lucide-react";
+import { Settings, Search, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -266,10 +266,10 @@ const Index = () => {
 
   const isKagiSelected = searchEngine === 'kagi-assistant';
 
-  // 打开扩展程序页面
-  const handleOpenExtensions = () => {
+  // 打开浏览器设置页面
+  const handleOpenBrowserSettings = () => {
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      chrome.runtime.sendMessage({ type: "OPEN_EXTENSIONS_PAGE" });
+      chrome.runtime.sendMessage({ type: "OPEN_BROWSER_SETTINGS" });
     }
   };
 
@@ -459,25 +459,25 @@ const Index = () => {
         )}
       </div>
 
-      {/* 右下角设置和扩展程序按钮 */}
+      {/* 右下角设置和浏览器设置按钮 */}
       <div className="fixed bottom-4 right-4 flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setShowSettings(true)}
           className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
-          title="打开设置"
+          title={t('index.openSettings')}
         >
           <Settings className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleOpenExtensions}
+          onClick={handleOpenBrowserSettings}
           className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
-          title="打开扩展程序页面"
+          title={t('index.openBrowserSettings')}
         >
-          <Puzzle className="h-5 w-5" />
+          <Globe className="h-5 w-5" />
         </Button>
       </div>
 
