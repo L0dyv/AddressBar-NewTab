@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, GripVertical, Loader2, Pencil, Check, X } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -68,20 +69,22 @@ const DraggableRow = ({
         // 编辑模式下不应用拖拽属性，避免干扰中文输入法
         return (
             <div ref={setNodeRef} style={style}
-                className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-b-0 bg-muted/30">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <Input
                         value={editingLink.name}
                         onChange={(e) => onEditingLinkChange({ ...editingLink, name: e.target.value })}
                         placeholder={t('quickLinks.namePlaceholder')}
                         disabled={isEditLoading}
                         autoFocus
+                        className="h-8 text-sm"
                     />
                     <Input
                         value={editingLink.url}
                         onChange={(e) => onEditingLinkChange({ ...editingLink, url: e.target.value })}
                         placeholder={t('quickLinks.urlPlaceholder')}
                         disabled={isEditLoading}
+                        className="h-8 text-sm"
                     />
                 </div>
                 <Button
@@ -89,17 +92,17 @@ const DraggableRow = ({
                     size="sm"
                     onClick={onSaveEditing}
                     disabled={!editingLink.url || isEditLoading}
-                    className="text-green-600 hover:text-green-800"
+                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
                 >
-                    {isEditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    {isEditLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                 </Button>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={onCancelEditing}
-                    className="text-gray-600 hover:text-gray-800"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                 >
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5" />
                 </Button>
             </div>
         );
@@ -107,33 +110,35 @@ const DraggableRow = ({
 
     return (
         <div ref={setNodeRef} style={style}
-            className="flex items-center gap-4 p-3 border rounded-lg overflow-hidden">
-            <div {...attributes} {...listeners} className="drag-handle text-gray-400 flex-shrink-0">
-                <GripVertical />
+            className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-b-0 bg-background">
+            <div {...attributes} {...listeners} className="drag-handle text-muted-foreground hover:text-foreground flex-shrink-0 touch-none">
+                <GripVertical className="h-4 w-4" />
             </div>
-            <input type="checkbox" className="w-5 h-5 flex-shrink-0"
+            <Checkbox
                 checked={link.enabled === true}
-                onChange={handleCheckboxChange} />
+                onCheckedChange={(checked) => onToggleEnabled(link.id, Boolean(checked))}
+                className="flex-shrink-0"
+            />
             <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{link.name}</div>
-                <div className="text-sm text-gray-500 truncate">{link.url}</div>
+                <div className="text-sm font-medium text-foreground truncate">{link.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{link.url}</div>
             </div>
             <div className="flex-shrink-0 flex gap-1">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleEditClick}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-600"
                 >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleRemoveClick}
-                    className="text-red-600 hover:text-red-800"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                 >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                 </Button>
             </div>
         </div>

@@ -90,6 +90,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'searchEngines.confirmDeleteBtn': '确认删除',
         'searchEngines.aboutKagi': '关于 Kagi Assistant',
         'searchEngines.kagiDesc': 'Kagi Assistant 是集成的AI助手，支持多种模型。使用前请确保已登录 Kagi 账户。拖拽左侧图标可调整顺序。',
+        'searchEngines.aiSearch': 'AI助手搜索',
+        'searchEngines.defaultCannotDisable': '默认搜索引擎不能取消勾选',
 
         // 导入导出
         'importExport.title': '导入/导出设置',
@@ -248,6 +250,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'searchEngines.confirmDeleteBtn': 'Confirm Delete',
         'searchEngines.aboutKagi': 'About Kagi Assistant',
         'searchEngines.kagiDesc': 'Kagi Assistant is an integrated AI assistant supporting multiple models. Login to Kagi required. Drag to reorder.',
+        'searchEngines.aiSearch': 'AI Assistant Search',
+        'searchEngines.defaultCannotDisable': 'Default search engine cannot be disabled',
 
         // Import/Export
         'importExport.title': 'Import/Export Settings',

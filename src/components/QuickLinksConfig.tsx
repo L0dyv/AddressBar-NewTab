@@ -232,14 +232,14 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
     <div className="p-6 space-y-6">
       {/* 现有快速链接列表 */}
       {links.length > 0 && (
-        <div className="space-y-3">
+        <div className="rounded-lg border border-border overflow-hidden">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div>
                 {links.map((link) => (
                   <DraggableRow
                     key={link.id}

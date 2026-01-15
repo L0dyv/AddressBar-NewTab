@@ -59,6 +59,7 @@ interface SortableEngineItemProps {
 }
 
 function SortableEngineItem({ engine, onSetDefault, onToggleEnabled, skipDeleteConfirm, onRequestDelete }: SortableEngineItemProps) {
+  const { t } = useI18n();
   const {
     attributes,
     listeners,
@@ -81,67 +82,61 @@ function SortableEngineItem({ engine, onSetDefault, onToggleEnabled, skipDeleteC
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-4 p-3 border rounded-lg bg-white dark:bg-gray-800 ${isDragging ? 'shadow-lg z-50 cursor-grabbing' : ''}`}
+      className={`flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-b-0 bg-background ${isDragging ? 'shadow-md z-50 cursor-grabbing rounded-md border border-border' : ''}`}
     >
       <div
         {...attributes}
         {...listeners}
-        className={`drag-handle text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-none ${isDragging ? 'drag-handle-active' : ''}`}
+        className={`drag-handle text-muted-foreground hover:text-foreground touch-none ${isDragging ? 'drag-handle-active' : ''}`}
       >
-        <GripVertical className="h-5 w-5" />
+        <GripVertical className="h-4 w-4" />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-medium">{engine.name}</span>
+          <span className="text-sm font-medium text-foreground truncate">{engine.name}</span>
           {engine.isAI && (
-            <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+            <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded text-xs font-medium">
               <Bot className="h-3 w-3" />
               AI
             </span>
           )}
         </div>
-        <div className="text-sm text-gray-500">
-          {engine.isAI ? "AI助手搜索" : engine.url}
+        <div className="text-xs text-muted-foreground truncate">
+          {engine.isAI ? t('searchEngines.aiSearch') : engine.url}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         {engine.isDefault ? (
-          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-            默认
+          <span className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs font-medium">
+            {t('searchEngines.isDefault')}
           </span>
         ) : (
           <Button
             variant="outline"
             size="sm"
             onClick={() => onSetDefault(engine.id)}
+            className="h-7 text-xs px-2"
           >
-            设为默认
+            {t('searchEngines.setDefault')}
           </Button>
         )}
         {!engine.isDefault && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              if (skipDeleteConfirm) {
-                onRequestDelete(engine.id);
-              } else {
-                onRequestDelete(engine.id);
-              }
-            }}
-            className="text-red-600 hover:text-red-800"
+            onClick={() => onRequestDelete(engine.id)}
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
-      <input
-        type="checkbox"
-        className="w-5 h-5"
+      <Checkbox
         checked={engine.enabled !== false}
-        onChange={e => onToggleEnabled(engine.id, e.target.checked)}
+        onCheckedChange={(checked) => onToggleEnabled(engine.id, Boolean(checked))}
         disabled={isCurrentDefault}
-        title={isCurrentDefault ? "默认搜索引擎不能取消勾选" : ""}
+        title={isCurrentDefault ? t('searchEngines.defaultCannotDisable') : ""}
+        className="flex-shrink-0"
       />
     </div>
   );
@@ -273,14 +268,14 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
       </div>
 
       {/* 现有搜索引擎列表 */}
-      <div className="space-y-2">
+      <div className="rounded-lg border border-border overflow-hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={engines.map(e => e.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
+            <div>
               {engines.map((engine) => (
                 <SortableEngineItem
                   key={engine.id}
