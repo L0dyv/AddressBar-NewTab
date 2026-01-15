@@ -1,6 +1,5 @@
-# Todo
-TODO/
-
+# local dev docs
+.localdocs/
 # Dependencies
 node_modules/
 
