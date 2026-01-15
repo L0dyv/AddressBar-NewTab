@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Loader2 } from "lucide-react";
 import DraggableRow from "@/components/DraggableRow";
 import {
@@ -44,6 +43,7 @@ interface QuickLink {
 interface QuickLinksConfigProps {
   links: QuickLink[];
   onLinksChange: (links: QuickLink[]) => void;
+  hideHeader?: boolean;
 }
 
 // 规范化URL：自动添加https://前缀（如果需要）
@@ -229,20 +229,17 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   };
 
   return (
-    <Card className="border-0 shadow-none">
-      <CardHeader>
-        <CardTitle>{t('quickLinks.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* 现有快速链接列表 */}
-        {links.length > 0 && (
+    <div className="p-6 space-y-6">
+      {/* 现有快速链接列表 */}
+      {links.length > 0 && (
+        <div className="space-y-3">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {links.map((link) => (
                   <DraggableRow
                     key={link.id}
@@ -263,54 +260,56 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
               </div>
             </SortableContext>
           </DndContext>
-        )}
-
-        {/* 添加新快速链接 */}
-        <div className={links.length > 0 ? "border-t pt-6" : ""}>
-          <h3 className="font-medium mb-4">{t('quickLinks.addNew')}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="linkName">{t('quickLinks.name')}</Label>
-              <Input
-                id="linkName"
-                value={newLink.name}
-                onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-                placeholder={t('quickLinks.namePlaceholder')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="linkUrl">{t('quickLinks.url')}</Label>
-              <Input
-                id="linkUrl"
-                value={newLink.url}
-                onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                placeholder={t('quickLinks.urlPlaceholder')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addLink();
-                  }
-                }}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={addLink} className="w-full" disabled={isLoading || !newLink.url}>
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                {isLoading ? t('quickLinks.fetchingTitle') : t('common.add')}
-              </Button>
-            </div>
-          </div>
-          {links.length > 0 && (
-            <p className="text-sm text-gray-500 mt-2">
-              {t('quickLinks.dragHint')}
-            </p>
-          )}
         </div>
-      </CardContent>
+      )}
+
+      {/* 添加新快速链接 */}
+      <div className="p-4 rounded-lg bg-muted/50 border border-border">
+        <h3 className="text-sm font-medium text-foreground mb-3">{t('quickLinks.addNew')}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <Label htmlFor="linkName" className="text-xs">{t('quickLinks.name')}</Label>
+            <Input
+              id="linkName"
+              value={newLink.name}
+              onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
+              placeholder={t('quickLinks.namePlaceholder')}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div>
+            <Label htmlFor="linkUrl" className="text-xs">{t('quickLinks.url')}</Label>
+            <Input
+              id="linkUrl"
+              value={newLink.url}
+              onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+              placeholder={t('quickLinks.urlPlaceholder')}
+              className="h-9 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addLink();
+                }
+              }}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={addLink} size="sm" className="w-full h-9" disabled={isLoading || !newLink.url}>
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-1" />
+              )}
+              {isLoading ? t('quickLinks.fetchingTitle') : t('common.add')}
+            </Button>
+          </div>
+        </div>
+        {links.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            {t('quickLinks.dragHint')}
+          </p>
+        )}
+      </div>
 
       <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
         <AlertDialogContent>
@@ -344,7 +343,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 };
 

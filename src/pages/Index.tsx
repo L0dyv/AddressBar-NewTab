@@ -1,18 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Settings, Search, Globe, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import SearchEngineConfig from "@/components/SearchEngineConfig";
-import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
 import SettingsModal from "@/components/SettingsModal";
-import ImportExportSettings from "@/components/ImportExportSettings";
+import UnifiedSettings from "@/components/UnifiedSettings";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, setStoredValue, migrateLocalStorageToSync } from "@/lib/storage";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
@@ -30,8 +22,6 @@ const Index = () => {
   const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-  const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
-  const [showImportExport, setShowImportExport] = useState(false);
   const [showShortcutHints, setShowShortcutHints] = useState(false);
 
   // 是否在新标签页中打开搜索结果
@@ -356,24 +346,14 @@ const Index = () => {
       {/* 设置和主题切换按钮 */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <ThemeToggle />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-100">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 z-50">
-            <DropdownMenuItem onClick={() => setShowSettings(true)}>
-              {t('settings.searchEngines')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)}>
-              {t('settings.quickLinks')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowImportExport(true)}>
-              {t('settings.importExport')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setShowSettings(true)}
+          className="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-100"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* 主搜索区域 */}
@@ -488,37 +468,18 @@ const Index = () => {
         </Button>
       </div>
 
-      {/* 设置弹窗 */}
+      {/* 统一设置弹窗 */}
       <SettingsModal
-        title={t('searchEngines.title')}
+        title={t('settings.title')}
         open={showSettings}
         onOpenChange={setShowSettings}
       >
-        <SearchEngineConfig
-          engines={searchEngines}
-          onEnginesChange={setSearchEngines}
+        <UnifiedSettings
+          searchEngines={searchEngines}
+          onSearchEnginesChange={setSearchEngines}
+          quickLinks={quickLinks}
+          onQuickLinksChange={setQuickLinks}
         />
-      </SettingsModal>
-
-      {/* 快速链接配置弹窗 */}
-      <SettingsModal
-        title={t('quickLinks.title')}
-        open={showQuickLinksConfig}
-        onOpenChange={setShowQuickLinksConfig}
-      >
-        <QuickLinksConfig
-          links={quickLinks}
-          onLinksChange={setQuickLinks}
-        />
-      </SettingsModal>
-
-      {/* 导入/导出设置弹窗 */}
-      <SettingsModal
-        title={t('importExport.title')}
-        open={showImportExport}
-        onOpenChange={setShowImportExport}
-      >
-        <ImportExportSettings />
       </SettingsModal>
     </div>
   );

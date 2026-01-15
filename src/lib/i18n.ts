@@ -41,12 +41,22 @@ const messages: Record<Locale, Record<string, string>> = {
         'autocomplete.bookmark': '书签',
 
         // 设置相关
+        'settings.title': '设置',
+        'settings.general': '通用设置',
         'settings.searchEngines': '搜索引擎设置',
+        'settings.searchEnginesShort': '搜索引擎',
         'settings.quickLinks': '快速链接设置',
+        'settings.quickLinksShort': '快速链接',
         'settings.importExport': '导入/导出设置',
+        'settings.dataManagement': '数据管理',
         'settings.dialog': '设置对话框',
         'settings.unsavedConfirm': '仍有未保存修改，确定关闭？',
         'settings.language': '语言',
+
+        // 通用设置
+        'generalSettings.searchBehavior': '搜索行为',
+        'generalSettings.openInNewTab': '在新标签页打开搜索结果',
+        'generalSettings.openInNewTabDesc': '启用后，搜索结果将在新标签页打开而非当前页面',
 
         // 快速链接配置
         'quickLinks.title': '快速链接配置',
@@ -66,13 +76,20 @@ const messages: Record<Locale, Record<string, string>> = {
         'searchEngines.title': '搜索引擎配置',
         'searchEngines.addNew': '添加新搜索引擎',
         'searchEngines.name': '名称',
+        'searchEngines.namePlaceholder': '搜索引擎名称',
         'searchEngines.url': '搜索URL',
         'searchEngines.urlHint': '使用 %s 作为搜索词占位符',
         'searchEngines.setDefault': '设为默认',
         'searchEngines.isDefault': '默认',
         'searchEngines.custom': '自定义',
         'searchEngines.builtin': '内置',
+        'searchEngines.resetToDefault': '重置为默认',
         'searchEngines.confirmDelete': '确认删除这个搜索引擎？',
+        'searchEngines.deleteWarning': '删除后无法恢复；默认搜索引擎不能删除。',
+        'searchEngines.skipConfirm': '下次不再提示',
+        'searchEngines.confirmDeleteBtn': '确认删除',
+        'searchEngines.aboutKagi': '关于 Kagi Assistant',
+        'searchEngines.kagiDesc': 'Kagi Assistant 是集成的AI助手，支持多种模型。使用前请确保已登录 Kagi 账户。拖拽左侧图标可调整顺序。',
 
         // 导入导出
         'importExport.title': '导入/导出设置',
@@ -182,12 +199,22 @@ const messages: Record<Locale, Record<string, string>> = {
         'autocomplete.bookmark': 'Bookmark',
 
         // Settings related
+        'settings.title': 'Settings',
+        'settings.general': 'General',
         'settings.searchEngines': 'Search Engine Settings',
+        'settings.searchEnginesShort': 'Search Engines',
         'settings.quickLinks': 'Quick Links Settings',
+        'settings.quickLinksShort': 'Quick Links',
         'settings.importExport': 'Import/Export Settings',
+        'settings.dataManagement': 'Data Management',
         'settings.dialog': 'Settings Dialog',
         'settings.unsavedConfirm': 'You have unsaved changes. Are you sure you want to close?',
         'settings.language': 'Language',
+
+        // General settings
+        'generalSettings.searchBehavior': 'Search Behavior',
+        'generalSettings.openInNewTab': 'Open search results in new tab',
+        'generalSettings.openInNewTabDesc': 'When enabled, search results will open in a new tab instead of the current page',
 
         // Quick links config
         'quickLinks.title': 'Quick Links Configuration',
@@ -207,13 +234,20 @@ const messages: Record<Locale, Record<string, string>> = {
         'searchEngines.title': 'Search Engine Configuration',
         'searchEngines.addNew': 'Add New Search Engine',
         'searchEngines.name': 'Name',
+        'searchEngines.namePlaceholder': 'Search engine name',
         'searchEngines.url': 'Search URL',
         'searchEngines.urlHint': 'Use %s as placeholder for search term',
         'searchEngines.setDefault': 'Set as Default',
         'searchEngines.isDefault': 'Default',
         'searchEngines.custom': 'Custom',
         'searchEngines.builtin': 'Built-in',
+        'searchEngines.resetToDefault': 'Reset to Default',
         'searchEngines.confirmDelete': 'Confirm delete this search engine?',
+        'searchEngines.deleteWarning': 'Cannot be undone; default engine cannot be deleted.',
+        'searchEngines.skipConfirm': "Don't ask again",
+        'searchEngines.confirmDeleteBtn': 'Confirm Delete',
+        'searchEngines.aboutKagi': 'About Kagi Assistant',
+        'searchEngines.kagiDesc': 'Kagi Assistant is an integrated AI assistant supporting multiple models. Login to Kagi required. Drag to reorder.',
 
         // Import/Export
         'importExport.title': 'Import/Export Settings',

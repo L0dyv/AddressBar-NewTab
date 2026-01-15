@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, X, Bot, GripVertical, RotateCcw } from "lucide-react";
+import { Trash2, Plus, Bot, GripVertical, RotateCcw } from "lucide-react";
+import { useI18n } from "@/hooks/useI18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,6 +148,7 @@ function SortableEngineItem({ engine, onSetDefault, onToggleEnabled, skipDeleteC
 }
 
 const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProps) => {
+  const { t } = useI18n();
   const [newEngine, setNewEngine] = useState({ name: "", url: "" });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
@@ -257,30 +258,29 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
   };
 
   return (
-    <Card className="border-0 shadow-none">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>搜索引擎配置</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetToDefault}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            重置为默认
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* 现有搜索引擎列表 */}
+    <div className="p-6 space-y-6">
+      {/* 顶部操作栏 */}
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={resetToDefault}
+          className="flex items-center gap-1 h-8 text-xs"
+        >
+          <RotateCcw className="h-3 w-3" />
+          {t('searchEngines.resetToDefault')}
+        </Button>
+      </div>
+
+      {/* 现有搜索引擎列表 */}
+      <div className="space-y-2">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={engines.map(e => e.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {engines.map((engine) => (
                 <SortableEngineItem
                   key={engine.id}
@@ -300,60 +300,62 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
             </div>
           </SortableContext>
         </DndContext>
+      </div>
 
-        {/* 添加新搜索引擎 */}
-        <div className="border-t pt-6">
-          <h3 className="font-medium mb-4">添加新搜索引擎</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="name">名称</Label>
-              <Input
-                id="name"
-                value={newEngine.name}
-                onChange={(e) => setNewEngine({ ...newEngine, name: e.target.value })}
-                placeholder="搜索引擎名称"
-              />
-            </div>
-            <div>
-              <Label htmlFor="url">搜索URL</Label>
-              <Input
-                id="url"
-                value={newEngine.url}
-                onChange={(e) => setNewEngine({ ...newEngine, url: e.target.value })}
-                placeholder="https://example.com/search?q="
-              />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={addEngine} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                添加
-              </Button>
-            </div>
+      {/* 添加新搜索引擎 */}
+      <div className="p-4 rounded-lg bg-muted/50 border border-border">
+        <h3 className="text-sm font-medium text-foreground mb-3">{t('searchEngines.addNew')}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <Label htmlFor="name" className="text-xs">{t('searchEngines.name')}</Label>
+            <Input
+              id="name"
+              value={newEngine.name}
+              onChange={(e) => setNewEngine({ ...newEngine, name: e.target.value })}
+              placeholder={t('searchEngines.namePlaceholder')}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div>
+            <Label htmlFor="url" className="text-xs">{t('searchEngines.url')}</Label>
+            <Input
+              id="url"
+              value={newEngine.url}
+              onChange={(e) => setNewEngine({ ...newEngine, url: e.target.value })}
+              placeholder="https://example.com/search?q="
+              className="h-9 text-sm"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={addEngine} size="sm" className="w-full h-9">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('common.add')}
+            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Kagi Assistant 说明 */}
-        <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                关于 Kagi Assistant
-              </h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Kagi Assistant 是集成的AI助手，支持多种模型（GPT-4o、Claude等）。使用前请确保已登录 Kagi 账户并有可用的配额。拖拽左侧图标可调整搜索引擎顺序。
-              </p>
-            </div>
+      {/* Kagi Assistant 说明 */}
+      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900">
+        <div className="flex items-start gap-2">
+          <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
+              {t('searchEngines.aboutKagi')}
+            </h4>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              {t('searchEngines.kagiDesc')}
+            </p>
           </div>
         </div>
-      </CardContent>
+      </div>
 
       <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除这个搜索引擎？</AlertDialogTitle>
+            <AlertDialogTitle>{t('searchEngines.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              删除后无法恢复；默认搜索引擎不能删除。
+              {t('searchEngines.deleteWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex items-center gap-2 py-2">
@@ -362,10 +364,10 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
               checked={skipDeleteConfirm}
               onCheckedChange={(val) => updateSkipConfirm(Boolean(val))}
             />
-            <Label htmlFor="skipConfirmEngines" className="text-sm">下次不再提示</Label>
+            <Label htmlFor="skipConfirmEngines" className="text-sm">{t('searchEngines.skipConfirm')}</Label>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>取消</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmDeleteId) {
@@ -375,12 +377,12 @@ const SearchEngineConfig = ({ engines, onEnginesChange }: SearchEngineConfigProp
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              确认删除
+              {t('searchEngines.confirmDeleteBtn')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 };
 

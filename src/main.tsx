@@ -3,6 +3,11 @@ import App from './App.tsx'
 import './index.css'
 import { initFaviconCache } from './lib/faviconCache'
 
+// 本地化字体 - Noto Serif SC（思源宋体）
+import '@fontsource/noto-serif-sc/400.css'
+import '@fontsource/noto-serif-sc/500.css'
+import '@fontsource/noto-serif-sc/700.css'
+
 type ChromeRuntime = { id?: string }
 type ChromeRoot = { runtime?: ChromeRuntime }
 type ChromeWindow = { chrome?: ChromeRoot }
