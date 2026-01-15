@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings, Search, Globe } from "lucide-react";
+import { Settings, Search, Globe, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -273,6 +273,13 @@ const Index = () => {
     }
   };
 
+  // 打开扩展程序页面
+  const handleOpenExtensions = () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: "OPEN_EXTENSIONS_PAGE" });
+    }
+  };
+
   useEffect(() => {
     const def = searchEngines.find(e => e.isDefault);
     if (!def) return;
@@ -459,17 +466,8 @@ const Index = () => {
         )}
       </div>
 
-      {/* 右下角设置和浏览器设置按钮 */}
+      {/* 右下角浏览器设置和扩展程序页面按钮 */}
       <div className="fixed bottom-4 right-4 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowSettings(true)}
-          className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
-          title={t('index.openSettings')}
-        >
-          <Settings className="h-5 w-5" />
-        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -478,6 +476,15 @@ const Index = () => {
           title={t('index.openBrowserSettings')}
         >
           <Globe className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleOpenExtensions}
+          className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
+          title={t('index.openExtensions')}
+        >
+          <Puzzle className="h-5 w-5" />
         </Button>
       </div>
 
