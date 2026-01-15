@@ -6,6 +6,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, migrateLocalStorageToSync, setStoredValue } from "@/lib/storage";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
+import { useI18n } from "@/hooks/useI18n";
 
 interface QuickLink {
     id: string;
@@ -16,10 +17,20 @@ interface QuickLink {
 }
 
 export default function Popup() {
+    const { t } = useI18n();
     const [query, setQuery] = useState("");
     const { theme } = useTheme();
     const [showQuickLinks, setShowQuickLinks] = useState(false);
     const [showShortcutHints, setShowShortcutHints] = useState(false);
+
+    // 是否在新标签页中打开搜索结果
+    const [openSearchInNewTab, setOpenSearchInNewTab] = useState(() => {
+        try {
+            return localStorage.getItem('openSearchInNewTab') === 'true';
+        } catch {
+            return false;
+        }
+    });
 
     const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
         try {
@@ -129,14 +140,25 @@ export default function Popup() {
         setShowQuickLinks(quickLinks.length > 0 && quickLinks.length <= 4);
     }, [quickLinks]);
 
-    // 在当前标签页导航，避免再创建新标签
-    const navigateInCurrentTab = (url: string) => {
-        const w = window as unknown as { chrome?: { tabs?: { update: (args: { url: string }) => void } } };
-        if (typeof window !== "undefined" && w.chrome?.tabs) {
-            w.chrome.tabs.update({ url });
-            window.close();
+    // 导航函数：根据设置决定在当前标签页还是新标签页打开
+    const navigateTo = (url: string) => {
+        if (openSearchInNewTab) {
+            // 在新标签页打开
+            if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+                chrome.tabs.create({ url });
+                window.close();
+            } else {
+                window.open(url, '_blank');
+            }
         } else {
-            window.location.href = url;
+            // 在当前标签页打开
+            const w = window as unknown as { chrome?: { tabs?: { update: (args: { url: string }) => void } } };
+            if (typeof window !== "undefined" && w.chrome?.tabs) {
+                w.chrome.tabs.update({ url });
+                window.close();
+            } else {
+                window.location.href = url;
+            }
         }
     };
 
@@ -163,7 +185,7 @@ export default function Popup() {
             internet: 'true'
         });
         const url = `https://kagi.com/assistant?${params.toString()}`;
-        navigateInCurrentTab(url);
+        navigateTo(url);
     };
 
     // 处理搜索提交
@@ -172,7 +194,7 @@ export default function Popup() {
 
         if (isURL(value)) {
             const url = value.startsWith('http') ? value : `https://${value}`;
-            navigateInCurrentTab(url);
+            navigateTo(url);
         } else {
             const engine = searchEngines.find(e => e.id === searchEngine);
             if (engine) {
@@ -180,7 +202,7 @@ export default function Popup() {
                     handleKagiSearch(value);
                 } else {
                     const searchUrl = engine.url + encodeURIComponent(value);
-                    navigateInCurrentTab(searchUrl);
+                    navigateTo(searchUrl);
                 }
             }
         }
@@ -188,12 +210,14 @@ export default function Popup() {
 
     // 打开快速链接
     const handleQuickLinkClick = (url: string) => {
-        navigateInCurrentTab(url);
+        navigateTo(url);
     };
 
-    // 打开设置（当前标签页）
+    // 打开浏览器设置页面
     const handleOpenSettings = () => {
-        navigateInCurrentTab("chrome://newtab");
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+            chrome.runtime.sendMessage({ type: "OPEN_BROWSER_SETTINGS" });
+        }
     };
 
     // 添加当前页面到快速链接
@@ -224,6 +248,12 @@ export default function Popup() {
             const updated = [...existingLinks, newLink];
             await setStoredValue('quickLinks', updated);
             setQuickLinks(updated.filter(l => l.enabled));
+
+            // 通知其他页面（如 newtab）刷新快速链接
+            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+                chrome.runtime.sendMessage({ type: 'QUICK_LINKS_UPDATED' });
+            }
+
             setAddStatus('added');
             setTimeout(() => setAddStatus('idle'), 2000);
         });
@@ -331,7 +361,7 @@ export default function Popup() {
                             value={query}
                             onChange={setQuery}
                             onSubmit={handleSubmit}
-                            placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索..."}
+                            placeholder={isKagiSelected ? t('index.kagiPlaceholder') : t('index.placeholder')}
                             className="w-full h-11 text-sm px-10 pr-20 rounded-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 focus:ring-1 focus:ring-stone-300 dark:focus:ring-stone-700 focus:border-transparent focus:outline-none transition-all duration-200"
                         />
 
@@ -340,7 +370,7 @@ export default function Popup() {
                             onClick={() => handleSubmit(query)}
                             className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 px-3 rounded-full bg-stone-800 dark:bg-stone-100 hover:bg-stone-900 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200"
                         >
-                            {isKagiSelected ? "提问" : "搜索"}
+                            {isKagiSelected ? t('index.ask') : t('common.search')}
                         </Button>
                     </div>
 
@@ -398,11 +428,11 @@ export default function Popup() {
                             className="w-full h-9 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
                         >
                             {addStatus === 'added' ? (
-                                <><Check className="h-3.5 w-3.5 mr-1.5 text-green-500" />已添加</>
+                                <><Check className="h-3.5 w-3.5 mr-1.5 text-green-500" />{t('popup.added')}</>
                             ) : addStatus === 'exists' ? (
-                                <>已存在</>
+                                <>{t('popup.exists')}</>
                             ) : (
-                                <><Plus className="h-3.5 w-3.5 mr-1.5" />收藏当前页面</>
+                                <><Plus className="h-3.5 w-3.5 mr-1.5" />{t('popup.addPage')}</>
                             )}
                         </Button>
                     </div>

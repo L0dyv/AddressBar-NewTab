@@ -38,17 +38,16 @@ const QuickLinkIcon = ({ name, url, icon, size = 32, className = "" }: QuickLink
     }, [url]);
 
     const sources = useMemo(() => {
-        const list: (string | undefined)[] = [];
-        if (isExtension) {
-            list.push(`chrome://favicon/${pageUrl}`);
-        }
+        // 注意：不使用 chrome://favicon/ 因为扩展页面不允许直接加载该协议
+        // favicon 获取已由 background.js 的 RESOLVE_FAVICON 消息处理
+        const list: string[] = [];
         list.push(`https://${hostname}/favicon.ico`);
         list.push(`https://icons.duckduckgo.com/ip3/${hostname}.ico`);
         list.push(`https://favicon.yandex.net/favicon/${hostname}`);
         list.push(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`);
         list.push(`http://${hostname}/favicon.ico`);
-        return list.filter(Boolean) as string[];
-    }, [isExtension, pageUrl, hostname]);
+        return list;
+    }, [hostname]);
 
     useEffect(() => {
         setStage(0);

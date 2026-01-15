@@ -16,6 +16,7 @@ import ImportExportSettings from "@/components/ImportExportSettings";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, setStoredValue, migrateLocalStorageToSync } from "@/lib/storage";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
+import { useI18n } from "@/hooks/useI18n";
 
 interface QuickLink {
   id: string;
@@ -26,11 +27,21 @@ interface QuickLink {
 }
 
 const Index = () => {
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
   const [showImportExport, setShowImportExport] = useState(false);
   const [showShortcutHints, setShowShortcutHints] = useState(false);
+
+  // 是否在新标签页中打开搜索结果
+  const [openSearchInNewTab, setOpenSearchInNewTab] = useState(() => {
+    try {
+      return localStorage.getItem('openSearchInNewTab') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
@@ -138,7 +149,25 @@ const Index = () => {
 
     const handler = () => { rehydrate(); };
     window.addEventListener('settings:updated', handler);
-    return () => window.removeEventListener('settings:updated', handler);
+
+    // 监听来自 background.js 的消息（如 popup 添加了新快速链接）
+    const messageListener = (message: { type: string }) => {
+      if (message.type === 'QUICK_LINKS_UPDATED') {
+        rehydrate();
+      }
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chromeRuntime = (chrome as any)?.runtime;
+    if (typeof chrome !== 'undefined' && chromeRuntime?.onMessage) {
+      chromeRuntime.onMessage.addListener(messageListener);
+    }
+
+    return () => {
+      window.removeEventListener('settings:updated', handler);
+      if (typeof chrome !== 'undefined' && chromeRuntime?.onMessage) {
+        chromeRuntime.onMessage.removeListener(messageListener);
+      }
+    };
   }, []);
 
   // 保存搜索引擎配置到 localStorage
@@ -191,7 +220,20 @@ const Index = () => {
     });
 
     const url = `https://kagi.com/assistant?${params.toString()}`;
-    window.location.href = url;
+    if (openSearchInNewTab) {
+      window.open(url, '_blank');
+    } else {
+      window.location.href = url;
+    }
+  };
+
+  // 导航到 URL 的辅助函数
+  const navigateTo = (url: string) => {
+    if (openSearchInNewTab) {
+      window.open(url, '_blank');
+    } else {
+      window.location.href = url;
+    }
   };
 
   // 处理搜索/导航
@@ -202,7 +244,7 @@ const Index = () => {
 
     if (isURL(value)) {
       const url = value.startsWith('http') ? value : `https://${value}`;
-      window.location.href = url;
+      navigateTo(url);
     } else {
       const engine = searchEngines.find(e => e.id === searchEngine);
       if (engine) {
@@ -210,7 +252,7 @@ const Index = () => {
           handleKagiSearch(value);
         } else {
           const searchUrl = engine.url + encodeURIComponent(value);
-          window.location.href = searchUrl;
+          navigateTo(searchUrl);
         }
       }
     }
@@ -315,13 +357,13 @@ const Index = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 z-50">
             <DropdownMenuItem onClick={() => setShowSettings(true)}>
-              搜索引擎设置
+              {t('settings.searchEngines')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)}>
-              快速链接设置
+              {t('settings.quickLinks')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShowImportExport(true)}>
-              导入/导出设置
+              {t('settings.importExport')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -332,16 +374,16 @@ const Index = () => {
         {/* 欢迎标题区域 - V0 风格 */}
         <div className="text-center mb-12">
           <p className="text-xs text-stone-500 dark:text-stone-500 font-light mb-3 tracking-wider">
-            {new Date().toLocaleDateString("zh-CN", {
+            {new Date().toLocaleDateString(locale === 'zh-CN' ? "zh-CN" : "en-US", {
               weekday: "long",
               month: "long",
               day: "numeric",
             })}
           </p>
           <h1 className="text-5xl md:text-6xl font-light text-stone-800 dark:text-stone-100 tracking-tight mb-2">
-            欢迎回来
+            {t('index.welcome')}
           </h1>
-          <p className="text-sm text-stone-500 dark:text-stone-500">你想要做什么？</p>
+          <p className="text-sm text-stone-500 dark:text-stone-500">{t('index.whatToDo')}</p>
         </div>
 
         {/* V0 风格搜索栏 */}
@@ -352,7 +394,7 @@ const Index = () => {
               value={query}
               onChange={setQuery}
               onSubmit={handleSubmit}
-              placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索..."}
+              placeholder={isKagiSelected ? t('index.kagiPlaceholder') : t('index.placeholder')}
               className="w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full pl-11 pr-24 py-3.5 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-300 dark:focus:ring-stone-700 focus:border-transparent transition-all text-sm"
             />
 
@@ -361,7 +403,7 @@ const Index = () => {
               onClick={() => handleSubmit(query)}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 h-9 px-5 rounded-full bg-stone-800 dark:bg-stone-100 hover:bg-stone-900 dark:hover:bg-white text-white dark:text-stone-900 font-medium text-sm shadow-sm hover:shadow-md transition-all duration-200"
             >
-              {isKagiSelected ? "提问" : "搜索"}
+              {isKagiSelected ? t('index.ask') : t('common.search')}
             </Button>
           </div>
 
@@ -417,20 +459,31 @@ const Index = () => {
         )}
       </div>
 
-      {/* 右下角扩展程序按钮 */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleOpenExtensions}
-        className="fixed bottom-4 right-4 text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
-        title="打开扩展程序页面"
-      >
-        <Puzzle className="h-5 w-5" />
-      </Button>
+      {/* 右下角设置和扩展程序按钮 */}
+      <div className="fixed bottom-4 right-4 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowSettings(true)}
+          className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
+          title="打开设置"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleOpenExtensions}
+          className="text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-all duration-200"
+          title="打开扩展程序页面"
+        >
+          <Puzzle className="h-5 w-5" />
+        </Button>
+      </div>
 
       {/* 设置弹窗 */}
       <SettingsModal
-        title="搜索引擎配置"
+        title={t('searchEngines.title')}
         open={showSettings}
         onOpenChange={setShowSettings}
       >
@@ -442,7 +495,7 @@ const Index = () => {
 
       {/* 快速链接配置弹窗 */}
       <SettingsModal
-        title="快速链接配置"
+        title={t('quickLinks.title')}
         open={showQuickLinksConfig}
         onOpenChange={setShowQuickLinksConfig}
       >
@@ -454,7 +507,7 @@ const Index = () => {
 
       {/* 导入/导出设置弹窗 */}
       <SettingsModal
-        title="导入/导出设置"
+        title={t('importExport.title')}
         open={showImportExport}
         onOpenChange={setShowImportExport}
       >

@@ -29,6 +29,8 @@ export interface ExportedSettings {
     deletedBuiltinIds: string[];
     /** 主题设置 */
     theme: Theme;
+    /** 是否在新标签页中打开搜索结果 */
+    openSearchInNewTab?: boolean;
 }
 
 // 当前配置版本
@@ -69,6 +71,8 @@ export function getAllSettings(): ExportedSettings {
 
     const theme = (localStorage.getItem('theme') as Theme) ?? 'system';
 
+    const openSearchInNewTab = localStorage.getItem('openSearchInNewTab') === 'true';
+
     return {
         version: CURRENT_VERSION,
         exportedAt: new Date().toISOString(),
@@ -77,6 +81,7 @@ export function getAllSettings(): ExportedSettings {
         currentSearchEngine,
         deletedBuiltinIds,
         theme,
+        openSearchInNewTab,
     };
 }
 
@@ -179,6 +184,7 @@ export async function importSettings(data: ExportedSettings): Promise<void> {
     localStorage.setItem('currentSearchEngine', currentEngineId);
     localStorage.setItem('deletedBuiltinIds', JSON.stringify(data.deletedBuiltinIds));
     localStorage.setItem('theme', data.theme);
+    localStorage.setItem('openSearchInNewTab', String(data.openSearchInNewTab ?? false));
 
     // 同步写入 chrome.storage.sync（忽略失败，保持本地可用）
     await Promise.allSettled([
@@ -187,6 +193,7 @@ export async function importSettings(data: ExportedSettings): Promise<void> {
         setStoredValue('currentSearchEngine', currentEngineId),
         setStoredValue('deletedBuiltinIds', data.deletedBuiltinIds),
         setStoredValue('theme', data.theme),
+        setStoredValue('openSearchInNewTab', data.openSearchInNewTab ?? false),
     ]);
 
     try {

@@ -221,6 +221,33 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                 </div>
             </div>
 
+            {/* 搜索行为设置 */}
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                <h3 className="text-sm font-medium text-foreground mb-3">搜索行为</h3>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-foreground">在新标签页打开搜索结果</p>
+                        <p className="text-xs text-muted-foreground">启用后，搜索结果将在新标签页打开而非当前页面</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={settings.openSearchInNewTab ?? false}
+                            onChange={(e) => {
+                                const checked = e.target.checked;
+                                localStorage.setItem('openSearchInNewTab', String(checked));
+                                try {
+                                    window.dispatchEvent(new CustomEvent('settings:updated'));
+                                } catch { void 0; }
+                                onSettingsChanged?.();
+                            }}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-stone-300 dark:peer-focus:ring-stone-600 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-stone-600 dark:peer-checked:bg-stone-400"></div>
+                    </label>
+                </div>
+            </div>
+
             {/* 操作按钮 */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -433,6 +460,11 @@ export default function ImportExportSettings({ onSettingsChanged }: ImportExport
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* 版本号 */}
+            <div className="text-center text-xs text-muted-foreground pt-2">
+                v{__APP_VERSION__}
+            </div>
         </div>
     );
 }

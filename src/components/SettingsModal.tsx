@@ -12,6 +12,7 @@ import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 interface SettingsModalProps {
     title: string;
@@ -44,12 +45,12 @@ const CustomDialogContent = React.forwardRef<
                 onClick={onClose}
                 type="button"
                 className="absolute -top-4 -right-4 z-[100] rounded-full bg-background text-foreground p-2.5 shadow-xl border border-border hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
-                aria-label="关闭"
+                aria-label={t('common.close')}
             >
                 <X className="h-5 w-5" />
             </button>
             <VisuallyHidden.Root asChild>
-                <DialogDescription>设置对话框</DialogDescription>
+                <DialogDescription>{t('settings.dialog')}</DialogDescription>
             </VisuallyHidden.Root>
             <div className="max-h-[90vh] overflow-y-auto rounded-lg">
                 {children}
@@ -68,7 +69,7 @@ export default function SettingsModal({
 }: SettingsModalProps) {
     // 关闭时拦截：有脏数据就二次确认
     const handleClose = useCallback(() => {
-        if (!dirty || window.confirm("仍有未保存修改，确定关闭？")) {
+        if (!dirty || window.confirm(t('settings.unsavedConfirm'))) {
             onOpenChange(false);
         }
     }, [dirty, onOpenChange]);

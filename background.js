@@ -119,6 +119,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return false;
     }
 
+    // 处理打开浏览器设置页面的请求
+    if (message && message.type === "OPEN_BROWSER_SETTINGS") {
+        chrome.tabs.create({ url: "chrome://settings" });
+        sendResponse({ success: true });
+        return false;
+    }
+
+    // 处理快速链接更新通知，广播到所有标签页
+    if (message && message.type === "QUICK_LINKS_UPDATED") {
+        chrome.tabs.query({}, (tabs) => {
+            tabs.forEach(tab => {
+                if (tab.id && tab.id !== sender.tab?.id) {
+                    chrome.tabs.sendMessage(tab.id, { type: 'QUICK_LINKS_UPDATED' }).catch(() => {
+                        // 忽略无法接收消息的标签页
+                    });
+                }
+            });
+        });
+        sendResponse({ success: true });
+        return false;
+    }
+
     if (message && message.type === "FETCH_PAGE_TITLE" && message.url) {
         (async () => {
             try {
@@ -145,18 +167,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const cache = data[key] || {};
                 const cacheKey = message.url;
                 const cached = cache[cacheKey];
+
+                // 检查缓存
                 if (cached) {
-                    const src = typeof cached === "string" ? cached : (cached.data || cached.src);
-                    sendResponse({ success: true, src });
-                    return;
+                    // 如果是失败缓存，检查是否过期（1小时）
+                    if (cached.failed) {
+                        const expireTime = 60 * 60 * 1000; // 1 hour
+                        if (Date.now() - cached.timestamp < expireTime) {
+                            sendResponse({ success: false });
+                            return;
+                        }
+                        // 过期了，删除失败缓存，继续重试
+                        delete cache[cacheKey];
+                    } else {
+                        const src = typeof cached === "string" ? cached : (cached.data || cached.src);
+                        sendResponse({ success: true, src });
+                        return;
+                    }
                 }
+
                 const src = await resolveFavicon(message.url);
                 if (src) {
                     const dataUrl = await fetchToDataURL(src);
+
+                    // 验证是否真的是图片（防止 Cloudflare 验证页等 HTML 被缓存）
+                    if (dataUrl && !dataUrl.startsWith('data:image/')) {
+                        // 不是图片，缓存为失败状态
+                        cache[cacheKey] = { failed: true, timestamp: Date.now() };
+                        await chrome.storage.local.set({ [key]: cache });
+                        sendResponse({ success: false });
+                        return;
+                    }
+
                     cache[cacheKey] = dataUrl ? { src, data: dataUrl } : { src };
                     await chrome.storage.local.set({ [key]: cache });
                     sendResponse({ success: true, src: dataUrl || src });
                 } else {
+                    // favicon 获取失败，缓存失败状态并设置过期时间
+                    cache[cacheKey] = { failed: true, timestamp: Date.now() };
+                    await chrome.storage.local.set({ [key]: cache });
                     sendResponse({ success: false });
                 }
             } catch {

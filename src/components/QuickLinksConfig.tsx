@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, GripVertical, Loader2, Pencil, Check, X } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
+import DraggableRow from "@/components/DraggableRow";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,10 +31,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useI18n } from "@/hooks/useI18n";
 
 interface QuickLink {
   id: string;
@@ -68,6 +66,7 @@ const normalizeUrl = (url: string): string => {
 };
 
 const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
+  const { t } = useI18n();
   const [newLink, setNewLink] = useState({ name: "", url: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,11 +75,12 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
 
+  // 编辑模式下禁用 KeyboardSensor，避免干扰中文输入法
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
+    ...(!editingId ? [useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    })] : [])
   );
 
   // 通过 background.js 获取网页标题
@@ -225,107 +225,10 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
     onLinksChange(updatedLinks);
   };
 
-  const DraggableRow = ({ link }: { link: QuickLink }) => {
-    const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id: link.id });
-    const style = { transform: CSS.Transform.toString(transform), transition };
-    const isEditing = editingId === link.id;
-
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      e.stopPropagation();
-      toggleEnabled(link.id, e.target.checked);
-    };
-
-    const handleRemoveClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (skipDeleteConfirm) {
-        removeLink(link.id);
-      } else {
-        setConfirmDeleteId(link.id);
-      }
-    };
-
-    const handleEditClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      startEditing(link);
-    };
-
-    if (isEditing) {
-      return (
-        <div ref={setNodeRef} style={style}
-          className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input
-              value={editingLink.name}
-              onChange={(e) => setEditingLink({ ...editingLink, name: e.target.value })}
-              placeholder="留空将自动获取"
-              disabled={isEditLoading}
-              autoFocus
-            />
-            <Input
-              value={editingLink.url}
-              onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
-              placeholder="https://example.com"
-              disabled={isEditLoading}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={saveEditing}
-            disabled={!editingLink.url || isEditLoading}
-            className="text-green-600 hover:text-green-800"
-          >
-            {isEditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={cancelEditing}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div ref={setNodeRef} style={style}
-        className="flex items-center gap-4 p-3 border rounded-lg">
-        <div {...attributes} {...listeners} className="drag-handle text-gray-400">
-          <GripVertical />
-        </div>
-        <input type="checkbox" className="w-5 h-5"
-          checked={link.enabled === true}
-          onChange={handleCheckboxChange} />
-        <div className="flex-1">
-          <div className="font-medium">{link.name}</div>
-          <div className="text-sm text-gray-500">{link.url}</div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleEditClick}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleRemoveClick}
-          className="text-red-600 hover:text-red-800"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  };
-
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
-        <CardTitle>快速链接配置</CardTitle>
+        <CardTitle>{t('quickLinks.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有快速链接列表 */}
@@ -341,6 +244,17 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
                   <DraggableRow
                     key={link.id}
                     link={link}
+                    isEditing={editingId === link.id}
+                    editingLink={editingLink}
+                    isEditLoading={isEditLoading}
+                    skipDeleteConfirm={skipDeleteConfirm}
+                    onEditingLinkChange={setEditingLink}
+                    onStartEditing={startEditing}
+                    onSaveEditing={saveEditing}
+                    onCancelEditing={cancelEditing}
+                    onRemoveLink={removeLink}
+                    onToggleEnabled={toggleEnabled}
+                    onConfirmDelete={setConfirmDeleteId}
                   />
                 ))}
               </div>
@@ -350,24 +264,24 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
 
         {/* 添加新快速链接 */}
         <div className={links.length > 0 ? "border-t pt-6" : ""}>
-          <h3 className="font-medium mb-4">添加新快速链接</h3>
+          <h3 className="font-medium mb-4">{t('quickLinks.addNew')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="linkName">名称(可选)</Label>
+              <Label htmlFor="linkName">{t('quickLinks.name')}</Label>
               <Input
                 id="linkName"
                 value={newLink.name}
                 onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-                placeholder="留空将自动获取"
+                placeholder={t('quickLinks.namePlaceholder')}
               />
             </div>
             <div>
-              <Label htmlFor="linkUrl">网址</Label>
+              <Label htmlFor="linkUrl">{t('quickLinks.url')}</Label>
               <Input
                 id="linkUrl"
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                placeholder="https://example.com"
+                placeholder={t('quickLinks.urlPlaceholder')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -383,13 +297,13 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
                 ) : (
                   <Plus className="h-4 w-4 mr-2" />
                 )}
-                {isLoading ? "获取中..." : "添加"}
+                {isLoading ? t('quickLinks.fetchingTitle') : t('common.add')}
               </Button>
             </div>
           </div>
           {links.length > 0 && (
             <p className="text-sm text-gray-500 mt-2">
-              💡 提示：拖拽左侧图标可调整快速链接顺序
+              {t('quickLinks.dragHint')}
             </p>
           )}
         </div>
@@ -398,9 +312,9 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
       <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除这个快速链接？</AlertDialogTitle>
+            <AlertDialogTitle>{t('quickLinks.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              删除后无法恢复。
+              {t('quickLinks.deleteWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex items-center gap-2 py-2">
@@ -409,10 +323,10 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
               checked={skipDeleteConfirm}
               onCheckedChange={(val) => updateSkipConfirm(Boolean(val))}
             />
-            <Label htmlFor="skipConfirmLinks" className="text-sm">下次不再提示</Label>
+            <Label htmlFor="skipConfirmLinks" className="text-sm">{t('quickLinks.skipConfirm')}</Label>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>取消</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmDeleteId(null)}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmDeleteId) {
@@ -422,7 +336,7 @@ const QuickLinksConfig = ({ links, onLinksChange }: QuickLinksConfigProps) => {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              确认删除
+              {t('quickLinks.confirmDeleteBtn')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
