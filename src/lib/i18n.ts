@@ -170,6 +170,10 @@ const messages: Record<Locale, Record<string, string>> = {
         'language.title': '语言设置',
         'language.current': '当前语言',
         'language.auto': '自动检测（基于浏览器语言）',
+
+        // 右键菜单
+        'contextMenu.copyLink': '复制链接地址',
+        'contextMenu.delete': '删除',
     },
     'en': {
         // Common
@@ -334,6 +338,10 @@ const messages: Record<Locale, Record<string, string>> = {
         'language.title': 'Language Settings',
         'language.current': 'Current Language',
         'language.auto': 'Auto-detect (based on browser language)',
+
+        // Context menu
+        'contextMenu.copyLink': 'Copy Link',
+        'contextMenu.delete': 'Delete',
     },
 };
 

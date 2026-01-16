@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Search, Globe, Puzzle } from "lucide-react";
+import { Settings, Search, Globe, Puzzle, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,6 +9,13 @@ import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/d
 import { getStoredValue, setStoredValue, migrateLocalStorageToSync } from "@/lib/storage";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
 import { useI18n } from "@/hooks/useI18n";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface QuickLink {
   id: string;
@@ -282,6 +289,27 @@ const Index = () => {
     }
   };
 
+  // 删除快速链接
+  const removeQuickLink = (id: string) => {
+    setQuickLinks(links => links.filter(link => link.id !== id));
+  };
+
+  // 复制链接地址到剪贴板
+  const copyToClipboard = async (url: string) => {
+    const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+    try {
+      await navigator.clipboard.writeText(normalizedUrl);
+    } catch {
+      // fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = normalizedUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  };
+
   useEffect(() => {
     const def = searchEngines.find(e => e.isDefault);
     if (!def) return;
@@ -438,21 +466,38 @@ const Index = () => {
         {quickLinks.filter(l => l.enabled === true).length > 0 && (
           <div className="grid grid-cols-4 md:grid-cols-6 gap-4 md:gap-6 w-full">
             {quickLinks.filter(l => l.enabled === true).map((link) => (
-              <a
-                key={link.id}
-                href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                className="flex items-center justify-center py-4 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
-                title={link.name}
-              >
-                <div className="group-hover:scale-110 transition-transform duration-200">
-                  <QuickLinkIcon
-                    name={link.name}
-                    url={link.url}
-                    icon={link.icon}
-                    size={32}
-                  />
-                </div>
-              </a>
+              <ContextMenu key={link.id}>
+                <ContextMenuTrigger asChild>
+                  <a
+                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                    className="flex items-center justify-center py-4 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
+                    title={link.name}
+                  >
+                    <div className="group-hover:scale-110 transition-transform duration-200">
+                      <QuickLinkIcon
+                        name={link.name}
+                        url={link.url}
+                        icon={link.icon}
+                        size={32}
+                      />
+                    </div>
+                  </a>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => copyToClipboard(link.url)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    {t('contextMenu.copyLink')}
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onClick={() => removeQuickLink(link.id)}
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('contextMenu.delete')}
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </div>
         )}
