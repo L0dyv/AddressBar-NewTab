@@ -8,21 +8,16 @@ dist/
 release/
 extensions-*/
 
-# IDE
+# IDE and AI (Antigravity/cursor/claude code)
 .idea/
 .vscode/
 *.code-workspace
 .trae/
-
-# Agent
 .agent/
-
-# Cursor AI
 .cursorindexingignore
 .cursor/
-
-# SpecStory
 .specstory/
+.claude/
 
 # Design demos (not needed in repo)
 V0.dev Design Demo/
