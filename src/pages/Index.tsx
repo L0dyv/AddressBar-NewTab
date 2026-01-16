@@ -24,14 +24,20 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showShortcutHints, setShowShortcutHints] = useState(false);
 
-  // 是否在新标签页中打开搜索结果
-  const [openSearchInNewTab, setOpenSearchInNewTab] = useState(() => {
+  const readOpenSearchInNewTab = () => {
     try {
-      return localStorage.getItem('openSearchInNewTab') === 'true';
+      const scoped = localStorage.getItem('openSearchInNewTabNewTab');
+      if (scoped !== null) return scoped === 'true';
+      const legacy = localStorage.getItem('openSearchInNewTab') === 'true';
+      localStorage.setItem('openSearchInNewTabNewTab', String(legacy));
+      return legacy;
     } catch {
       return false;
     }
-  });
+  };
+
+  // 是否在新标签页中打开搜索结果（仅 newtab）
+  const [openSearchInNewTab, setOpenSearchInNewTab] = useState(readOpenSearchInNewTab);
 
   // 从 localStorage 加载搜索引擎配置，并使用方案B自动补齐
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
@@ -83,6 +89,9 @@ const Index = () => {
         'currentSearchEngine',
         'deletedBuiltinIds',
         'theme',
+        'openSearchInNewTab',
+        'openSearchInNewTabNewTab',
+        'openSearchInNewTabPopup',
       ]);
 
       const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
@@ -137,7 +146,10 @@ const Index = () => {
       }
     };
 
-    const handler = () => { rehydrate(); };
+    const handler = () => {
+      rehydrate();
+      setOpenSearchInNewTab(readOpenSearchInNewTab());
+    };
     window.addEventListener('settings:updated', handler);
 
     // 监听来自 background.js 的消息（如 popup 添加了新快速链接）

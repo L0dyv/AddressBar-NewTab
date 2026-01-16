@@ -35,6 +35,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'popup.addPage': '收藏当前页面',
         'popup.added': '已添加',
         'popup.exists': '已存在',
+        'popup.openInNewTab': '搜索结果在新标签页打开',
+        'popup.addPageUrl': '将收藏：',
 
         // 自动完成
         'autocomplete.history': '历史',
@@ -57,6 +59,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'generalSettings.searchBehavior': '搜索行为',
         'generalSettings.openInNewTab': '在新标签页打开搜索结果',
         'generalSettings.openInNewTabDesc': '启用后，搜索结果将在新标签页打开而非当前页面',
+        'generalSettings.openInNewTabNewTab': '新标签页：在新标签页打开搜索结果',
+        'generalSettings.openInNewTabNewTabDesc': '仅影响新标签页中的搜索行为',
 
         // 快速链接配置
         'quickLinks.title': '快速链接配置',
@@ -195,6 +199,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'popup.addPage': 'Save Current Page',
         'popup.added': 'Added',
         'popup.exists': 'Already exists',
+        'popup.openInNewTab': 'Open results in new tab',
+        'popup.addPageUrl': 'Will save:',
 
         // Autocomplete
         'autocomplete.history': 'History',
@@ -217,6 +223,8 @@ const messages: Record<Locale, Record<string, string>> = {
         'generalSettings.searchBehavior': 'Search Behavior',
         'generalSettings.openInNewTab': 'Open search results in new tab',
         'generalSettings.openInNewTabDesc': 'When enabled, search results will open in a new tab instead of the current page',
+        'generalSettings.openInNewTabNewTab': 'New tab page: open results in a new tab',
+        'generalSettings.openInNewTabNewTabDesc': 'Only affects searches in the new tab page',
 
         // Quick links config
         'quickLinks.title': 'Quick Links Configuration',

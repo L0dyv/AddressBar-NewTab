@@ -7,20 +7,26 @@ interface GeneralSettingsSectionProps {
 
 export default function GeneralSettingsSection({ onSettingsChanged }: GeneralSettingsSectionProps) {
   const { t, locale, setLocale, supportedLocales } = useI18n();
-  
-  const [openSearchInNewTab, setOpenSearchInNewTab] = useState(() => {
+
+  const readOpenSearchInNewTabNewTab = () => {
     try {
-      return localStorage.getItem('openSearchInNewTab') === 'true';
+      const scoped = localStorage.getItem('openSearchInNewTabNewTab');
+      if (scoped !== null) return scoped === 'true';
+      const legacy = localStorage.getItem('openSearchInNewTab') === 'true';
+      localStorage.setItem('openSearchInNewTabNewTab', String(legacy));
+      return legacy;
     } catch {
       return false;
     }
-  });
+  };
+
+  const [openSearchInNewTabNewTab, setOpenSearchInNewTabNewTab] = useState(readOpenSearchInNewTabNewTab);
 
   // 监听设置变化
   useEffect(() => {
     const handler = () => {
       try {
-        setOpenSearchInNewTab(localStorage.getItem('openSearchInNewTab') === 'true');
+        setOpenSearchInNewTabNewTab(readOpenSearchInNewTabNewTab());
       } catch {
         // ignore
       }
@@ -30,8 +36,9 @@ export default function GeneralSettingsSection({ onSettingsChanged }: GeneralSet
   }, []);
 
   const handleOpenInNewTabChange = (checked: boolean) => {
-    setOpenSearchInNewTab(checked);
+    setOpenSearchInNewTabNewTab(checked);
     try {
+      localStorage.setItem('openSearchInNewTabNewTab', String(checked));
       localStorage.setItem('openSearchInNewTab', String(checked));
       window.dispatchEvent(new CustomEvent('settings:updated'));
     } catch {
@@ -66,13 +73,13 @@ export default function GeneralSettingsSection({ onSettingsChanged }: GeneralSet
         <h3 className="text-sm font-medium text-foreground mb-3">{t('generalSettings.searchBehavior')}</h3>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">{t('generalSettings.openInNewTab')}</p>
-            <p className="text-xs text-muted-foreground">{t('generalSettings.openInNewTabDesc')}</p>
+            <p className="text-sm font-medium text-foreground">{t('generalSettings.openInNewTabNewTab')}</p>
+            <p className="text-xs text-muted-foreground">{t('generalSettings.openInNewTabNewTabDesc')}</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={openSearchInNewTab}
+              checked={openSearchInNewTabNewTab}
               onChange={(e) => handleOpenInNewTabChange(e.target.checked)}
               className="sr-only peer"
             />

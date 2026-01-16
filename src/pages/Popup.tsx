@@ -23,14 +23,20 @@ export default function Popup() {
     const [showQuickLinks, setShowQuickLinks] = useState(false);
     const [showShortcutHints, setShowShortcutHints] = useState(false);
 
-    // 是否在新标签页中打开搜索结果
-    const [openSearchInNewTab, setOpenSearchInNewTab] = useState(() => {
+    const readOpenSearchInNewTabPopup = () => {
         try {
-            return localStorage.getItem('openSearchInNewTab') === 'true';
+            const scoped = localStorage.getItem('openSearchInNewTabPopup');
+            if (scoped !== null) return scoped === 'true';
+            const legacy = localStorage.getItem('openSearchInNewTab') === 'true';
+            localStorage.setItem('openSearchInNewTabPopup', String(legacy));
+            return legacy;
         } catch {
             return false;
         }
-    });
+    };
+
+    // 是否在新标签页中打开搜索结果（仅 popup）
+    const [openSearchInNewTabPopup, setOpenSearchInNewTabPopup] = useState(readOpenSearchInNewTabPopup);
 
     const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
         try {
@@ -78,6 +84,9 @@ export default function Popup() {
                 'currentSearchEngine',
                 'deletedBuiltinIds',
                 'theme',
+                'openSearchInNewTab',
+                'openSearchInNewTabNewTab',
+                'openSearchInNewTabPopup',
             ]);
 
             const fallbackEngineId = defaultSearchEngines.find(e => e.isDefault)?.id || "google";
@@ -130,7 +139,10 @@ export default function Popup() {
             }
         };
 
-        const handler = () => { rehydrate(); };
+        const handler = () => {
+            rehydrate();
+            setOpenSearchInNewTabPopup(readOpenSearchInNewTabPopup());
+        };
         window.addEventListener('settings:updated', handler);
         return () => window.removeEventListener('settings:updated', handler);
     }, []);
@@ -142,7 +154,7 @@ export default function Popup() {
 
     // 导航函数：根据设置决定在当前标签页还是新标签页打开
     const navigateTo = (url: string) => {
-        if (openSearchInNewTab) {
+        if (openSearchInNewTabPopup) {
             // 在新标签页打开
             if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
                 chrome.tabs.create({ url });
@@ -222,12 +234,34 @@ export default function Popup() {
 
     // 添加当前页面到快速链接
     const [addStatus, setAddStatus] = useState<'idle' | 'added' | 'exists'>('idle');
+    const [currentTabUrl, setCurrentTabUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
+        chrome.runtime.sendMessage({ type: "GET_CURRENT_TAB" }, (res: unknown) => {
+            const response = res as { success?: boolean; url?: string } | undefined;
+            if (response?.success && response.url) {
+                setCurrentTabUrl(response.url);
+            }
+        });
+    }, []);
+
+    const handlePopupOpenInNewTabChange = (checked: boolean) => {
+        setOpenSearchInNewTabPopup(checked);
+        void setStoredValue('openSearchInNewTabPopup', checked);
+        try {
+            window.dispatchEvent(new CustomEvent('settings:updated'));
+        } catch {
+            void 0;
+        }
+    };
     const handleAddCurrentPage = async () => {
         if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
 
         chrome.runtime.sendMessage({ type: "GET_CURRENT_TAB" }, async (res: unknown) => {
             const response = res as { success?: boolean; url?: string; title?: string } | undefined;
             if (!response?.success || !response.url) return;
+            setCurrentTabUrl(response.url);
 
             // 检查是否已存在
             const existingLinks = await getStoredValue<QuickLink[]>('quickLinks', []);
@@ -333,7 +367,7 @@ export default function Popup() {
     }, []);
 
     // 动态计算高度
-    const popupHeight = showQuickLinks ? "320px" : "240px";
+    const popupHeight = showQuickLinks ? "360px" : "270px";
 
     return (
         <div
@@ -421,6 +455,20 @@ export default function Popup() {
 
                     {/* 添加当前页面按钮 */}
                     <div className="mt-auto pt-2 border-t border-stone-200 dark:border-stone-800">
+                        <div className="flex items-center justify-between gap-3 px-1 pb-2">
+                            <p className="text-xs text-stone-600 dark:text-stone-400">
+                                {t('popup.openInNewTab')}
+                            </p>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={openSearchInNewTabPopup}
+                                    onChange={(e) => handlePopupOpenInNewTabChange(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-stone-300 dark:peer-focus:ring-stone-600 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-stone-600 dark:peer-checked:bg-stone-400"></div>
+                            </label>
+                        </div>
                         <Button
                             variant="ghost"
                             onClick={handleAddCurrentPage}
@@ -435,6 +483,14 @@ export default function Popup() {
                                 <><Plus className="h-3.5 w-3.5 mr-1.5" />{t('popup.addPage')}</>
                             )}
                         </Button>
+                        {currentTabUrl && (
+                            <div className="mt-1.5 px-2 text-[11px] text-stone-500 dark:text-stone-500 flex items-center gap-1">
+                                <span className="flex-shrink-0">{t('popup.addPageUrl')}</span>
+                                <span className="min-w-0 flex-1 truncate" title={currentTabUrl}>
+                                    {currentTabUrl}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
