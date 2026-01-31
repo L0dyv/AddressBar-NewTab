@@ -7,6 +7,7 @@ import SettingsModal from "@/components/SettingsModal";
 import UnifiedSettings from "@/components/UnifiedSettings";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, setStoredValue, migrateLocalStorageToSync } from "@/lib/storage";
+import { ensureUrlHasProtocol } from "@/lib/url";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
 import { useI18n } from "@/hooks/useI18n";
 import {
@@ -252,7 +253,7 @@ const Index = () => {
     console.log('Submitting search with engine:', searchEngine, 'value:', value);
 
     if (isURL(value)) {
-      const url = value.startsWith('http') ? value : `https://${value}`;
+      const url = ensureUrlHasProtocol(value);
       navigateTo(url);
     } else {
       const engine = searchEngines.find(e => e.id === searchEngine);
@@ -296,7 +297,7 @@ const Index = () => {
 
   // 复制链接地址到剪贴板
   const copyToClipboard = async (url: string) => {
-    const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+    const normalizedUrl = ensureUrlHasProtocol(url);
     try {
       await navigator.clipboard.writeText(normalizedUrl);
     } catch {
@@ -469,7 +470,7 @@ const Index = () => {
               <ContextMenu key={link.id}>
                 <ContextMenuTrigger asChild>
                   <a
-                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                    href={ensureUrlHasProtocol(link.url)}
                     className="flex items-center justify-center py-4 px-2 rounded-lg hover:bg-stone-200/30 dark:hover:bg-stone-800/20 transition-colors duration-200 group cursor-pointer"
                     title={link.name}
                   >

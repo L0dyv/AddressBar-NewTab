@@ -31,6 +31,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useI18n } from "@/hooks/useI18n";
+import { isLocalHostname } from "@/lib/url";
 
 interface QuickLink {
   id: string;
@@ -57,6 +58,18 @@ const normalizeUrl = (url: string): string => {
   }
 
   // 检查是否看起来像一个域名（包含.且不含空格）
+  // localhost / private IPs: prefer http://
+  if (!/\s/.test(trimmedUrl)) {
+    try {
+      const hostname = new URL(`http://${trimmedUrl}`).hostname;
+      if (isLocalHostname(hostname)) {
+        return `http://${trimmedUrl}`;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (trimmedUrl.includes('.') && !trimmedUrl.includes(' ')) {
     return `https://${trimmedUrl}`;
   }

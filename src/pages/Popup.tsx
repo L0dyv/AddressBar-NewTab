@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { SearchEngine, defaultSearchEngines, mergeBuiltinEngines } from "@/lib/defaultSearchEngines";
 import { getStoredValue, migrateLocalStorageToSync, setStoredValue } from "@/lib/storage";
+import { ensureUrlHasProtocol } from "@/lib/url";
 import QuickLinkIcon from "@/components/QuickLinkIcon";
 import { useI18n } from "@/hooks/useI18n";
 
@@ -182,9 +183,26 @@ export default function Popup() {
 
     // 判断是否为URL
     const isURL = (text: string) => {
+        // 不能包含空格
+        if (text.includes(' ')) return false;
+
         try {
-            new URL(text.startsWith('http') ? text : `http://${text}`);
-            return text.includes('.') && !text.includes(' ');
+            const urlToTest = text.startsWith('http') ? text : `http://${text}`;
+            new URL(urlToTest);
+
+            // 包含 . 的域名（如 google.com）
+            if (text.includes('.')) return true;
+
+            // localhost 或 localhost:port 格式
+            if (/^localhost(:\d+)?(\/.*)?$/i.test(text)) return true;
+
+            // 带有协议前缀的 localhost
+            if (/^https?:\/\/localhost(:\d+)?(\/.*)?$/i.test(text)) return true;
+
+            // IP地址格式（如 127.0.0.1:8080）
+            if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?(\/.*)?$/.test(text)) return true;
+
+            return false;
         } catch {
             return false;
         }
@@ -205,7 +223,7 @@ export default function Popup() {
         if (!value.trim()) return;
 
         if (isURL(value)) {
-            const url = value.startsWith('http') ? value : `https://${value}`;
+            const url = ensureUrlHasProtocol(value);
             navigateTo(url);
         } else {
             const engine = searchEngines.find(e => e.id === searchEngine);

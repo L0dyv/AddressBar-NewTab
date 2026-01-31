@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { getCachedFavicon, updateMemoryCache } from "@/lib/faviconCache";
+import { ensureUrlHasProtocol } from "@/lib/url";
 
 interface QuickLinkIconProps {
     name: string;
@@ -14,13 +15,15 @@ const QuickLinkIcon = ({ name, url, icon, size = 32, className = "" }: QuickLink
     const [stage, setStage] = useState(0);
     const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);
 
+    const normalizedUrl = useMemo(() => ensureUrlHasProtocol(url), [url]);
+
     const hostname = useMemo(() => {
         try {
-            return new URL(url).hostname;
+            return new URL(normalizedUrl).hostname;
         } catch {
             return url;
         }
-    }, [url]);
+    }, [normalizedUrl, url]);
 
     const label = useMemo(() => {
         const source = (name || hostname || "?").trim();
@@ -30,12 +33,11 @@ const QuickLinkIcon = ({ name, url, icon, size = 32, className = "" }: QuickLink
     const isExtension = typeof chrome !== "undefined";
     const pageUrl = useMemo(() => {
         try {
-            const u = url.startsWith("http") ? url : `https://${url}`;
-            return new URL(u).toString();
+            return new URL(normalizedUrl).toString();
         } catch {
             return url;
         }
-    }, [url]);
+    }, [normalizedUrl, url]);
 
     const sources = useMemo(() => {
         // 注意：不使用 chrome://favicon/ 因为扩展页面不允许直接加载该协议
